@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+import argparse
+from skimage.io.collection import ImageCollection
+from pyphe import quantify
+
+
+if __name__ == '__main__':
+    ###Set up parsing of command line arguments with argparse###
+    parser = argparse.ArgumentParser(description='Welcome to pyphe-quantify, part of the pyphe toolbox. Written by stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-Lab/pyphe')
+  
+    parser.add_argument('mode', type=str, choices=['batch', 'timecourse', 'redness'], help='')
+    
+    parser.add_argument('--grid', type=str, help='')
+    parser.add_argument('--pattern', type=str, default='*.jpg', help='')
+    parser.add_argument('--t', type=float, default=1, help='')
+    parser.add_argument('--d', type=float, default=1, help='')
+    parser.add_argument('--s', type=int, help='')
+    parser.add_argument('--negate', type=bool, default=True, help='')
+    parser.add_argument('--onlyNearestQ',  type=bool, default=True, help='')
+    parser.add_argument('--hardImageThreshold', type=float, help='')
+    parser.add_argument('--hardSizeThreshold', type=float, help='')
+
+    args = parser.parse_args()
+    
+    ###Load images as collection###
+    images = ImageCollection(args.pattern, conserve_memory=True)
+    if not len(images) > 0:
+        raise ValueError('No images to analyse. By default all .jpg images in the current working directory will be analysed. The folder and file type can be changed using the --pattern option'
+    print('Starting analysis of %i images in %s mode'%(len(images), args.mode)
+    
+    ###Make grid###
+    #Predefined grids
+    grid = args.grid
+    if grid == 'som3_96':
+        grid = '8-12-1-2-3-4'
+    if grid == 'som3_384':
+        grid = '16-24-1-2-3-4'
+    if grid == 'som3_1536':
+        grid = '32-48-1-2-3-4'
+        
+    #If user defined grid, check if in the right format
+    if not len(grid.split('-'))==6:
+        raise ValueError('Grid definition not in correct format. Must be one of som3_96, som3_384, som3_1536 or a custom grid definition consisting of 6 integers separated by "-".')
+    
+    grid = grid.split('-')
+    try:
+        grid = map(int, grid)
+    except Exception:
+        raise ValueError('Grid definition not in correct format. Must be one of som3_96, som3_384, som3_1536 or a custom grid definition consisting of 6 integers separated by "-".')
+    
+    #Create grid
+    grid, griddist = quantify.make_grid(grid)
+    
+    ###Start analysis###
+    arg_dict = dict(args.vars())
+    arg_dict.pop('grid')
+    arg_dict.pop('mode')
+    arg_dict.pop('grid')
+
+    if args.mode == 'batch':
+        quantify.quantify_batch(images, grid, griddist, **arg_dict)        
+    if args.mode == 'timecourse':
+        quantify.quantify_timecourse(images, grid, griddist, **arg_dict)        
+    if args.mode == 'redness':
+        quantify.quantify_redness(images, grid, griddist, **arg_dict)
+       
+    print('Analysis complete.')
+
+

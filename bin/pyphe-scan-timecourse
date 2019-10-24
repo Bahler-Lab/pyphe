@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+import argparse
+import time
+from pyphe import scan
+
+
+#Fixture cropping parameters, change/add your own if you know what you are doing
+geometries = {
+'som3_edge':['2034x2865+84+0', '2034x2865+2292+0', '2034x2865+97+3135', '2034x2865+2317+3135'],
+'som3' : ['1726x2603+257+127', '1726x2603+2434+127', '1726x2603+257+3274', '1726x2603+2434+3274'],
+}
+
+
+if __name__ == '__main__':
+    #Set up parsing of command line arguments with argparse
+    parser = argparse.ArgumentParser(description='Welcome to pyphe-scan-timecourse, part of the pyphe toolbox. Written by stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-Lab/pyphe')
+    
+    parser.add_argument('--nscans', type=int, default=100, help='Number of time points to scan. This defaults to 100 and the script can be terminated by Ctr+C when done.')
+    parser.add_argument('--interval', type=int, default=20, help='Time in minutes between scans. Defaults to 20.')
+    parser.add_argument('--prefix', type=str, default=time.strftime('%Y%m%d'), help='Name prefix for output files. The default is the current date YYYYMMDD.')
+    parser.add_argument('--postfix', type=str, default='', help='Name postfix for output files. Defaults to empty string.')
+    parser.add_argument('--fixture', type=str, choices = list(geometries), help='ID of the fixture you are using.')
+    parser.add_argument('--resolution', choices=[150,300,600,900,1200], type=int, default=600, help='Resolution for scanning in dpi. Default is 600.')
+    parser.add_argument('--scanner', choices=[1,2,3], type=int, default=1, help='Which scanner to use. Scanners are not uniquely identified and may switch when turned off/unplugged. This option does not need to be set when only one scanner is connected.')
+    parser.add_argument('--mode', choices=['Gray', 'Color'], type=str, default='Gray', help='Which color mode to use for scanning. Defaults to Gray.')
+
+    args = parser.parse_args()
+           
+    scanner = scan.find_scanner(args.scanner)
+    
+    scan.scan_batch(args.nscans, args.interval, args.prefix, args.postfix, args.fixture, args.resolution, geometries, scanner, args.mode)

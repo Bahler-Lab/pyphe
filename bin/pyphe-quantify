@@ -2,8 +2,7 @@
 
 import argparse
 from skimage.io.collection import ImageCollection
-from pyphe import quantify
-
+from pyphe import quantify, analysis
 
 if __name__ == '__main__':
     ###Set up parsing of command line arguments with argparse###
@@ -14,20 +13,30 @@ if __name__ == '__main__':
     parser.add_argument('--grid', type=str, help='')
     parser.add_argument('--pattern', type=str, default='*.jpg', help='')
     parser.add_argument('--t', type=float, default=1, help='')
-    parser.add_argument('--d', type=float, default=1, help='')
-    parser.add_argument('--s', type=int, help='')
+    parser.add_argument('--d', type=float, default=3, help='')
+    parser.add_argument('--s', type=int, default=1, help='')
     parser.add_argument('--negate', type=bool, default=True, help='')
     parser.add_argument('--onlyNearestQ',  type=bool, default=True, help='')
     parser.add_argument('--hardImageThreshold', type=float, help='')
     parser.add_argument('--hardSizeThreshold', type=float, help='')
+    parser.add_argument('--qc', type=str, default='qc_images', help='Directory to save qc images in. Defaults to "qc_images".')
+    parser.add_argument('--out', type=str, default='pyphe_quant', help='Directory to save output files in. Defaults to "pyphe_quant".')
 
     args = parser.parse_args()
+    
+    #Check that coefficients are within bounds
+    if not args.t > 0:
+        raise ValueError('t must be > 0.')
+    if not args.d > 2:
+        raise ValueError('d must be > 2.')
+    if not args.s>0:
+        raise ValueError('s must be > 0.')
     
     ###Load images as collection###
     images = ImageCollection(args.pattern, conserve_memory=True)
     if not len(images) > 0:
-        raise ValueError('No images to analyse. By default all .jpg images in the current working directory will be analysed. The folder and file type can be changed using the --pattern option'
-    print('Starting analysis of %i images in %s mode'%(len(images), args.mode)
+        raise ValueError('No images to analyse. By default all .jpg images in the current working directory will be analysed. The folder and file type can be changed using the --pattern option')
+    print('Starting analysis of %i images in %s mode'%(len(images), args.mode))
     
     ###Make grid###
     #Predefined grids
@@ -45,18 +54,24 @@ if __name__ == '__main__':
     
     grid = grid.split('-')
     try:
-        grid = map(int, grid)
+        grid = list(map(int, grid))
     except Exception:
         raise ValueError('Grid definition not in correct format. Must be one of som3_96, som3_384, som3_1536 or a custom grid definition consisting of 6 integers separated by "-".')
     
     #Create grid
     grid, griddist = quantify.make_grid(grid)
     
+    #Create output folders
+    analysis.check_mkdir(args.out)
+    analysis.check_mkdir(args.qc)
+
     ###Start analysis###
-    arg_dict = dict(args.vars())
+    arg_dict = dict(vars(args))
+    argstr = '\n    '.join(['%s: %s'%(k,str(v)) for k,v in arg_dict.items()])
+    print('Starting analysis with the following parameters:\n%s'%argstr)
     arg_dict.pop('grid')
     arg_dict.pop('mode')
-    arg_dict.pop('grid')
+    arg_dict.pop('pattern')
 
     if args.mode == 'batch':
         quantify.quantify_batch(images, grid, griddist, **arg_dict)        

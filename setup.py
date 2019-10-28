@@ -8,13 +8,14 @@ setup(name='pyphe',
       author_email='stephan.kamrad@crick.ac.uk',
       license='MIT',
       packages=['pyphe'],
-      scripts=['bin/pyphe-scan', 'bin/pyphe-scan', 'bin/pyphe-scan-timecourse', 'bin/pyphe-growthcurves', 'bin/pyphe-analysis', 'bin/pyphe-quantify'],
+      scripts=['bin/pyphe-scan', 'bin/pyphe-scan-timecourse', 'bin/pyphe-growthcurves', 'bin/pyphe-analysis', 'bin/pyphe-quantify'],
       install_requires=[
           'pandas',
           'matplotlib',
           'numpy',
           'seaborn',
           'scipy',
-          'PySimpleGUI'
+          'PySimpleGUI',
+          'scikit-image',
       ],
       zip_safe=False)

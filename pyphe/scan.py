@@ -69,7 +69,9 @@ def scan_batch(n, plateStart, prefix, postfix, fixture, resolution, geometries, 
             except Exception:
                 print('Invalid input')
 
-        cmdStr = 'scanimage --source TPU8x10 --mode %s --resolution %i --format=tiff --device-name=%s > %s%s_rawscan%s_%s.tiff'%(mode,resolution, scanner, rdir, prefix, i, postfix)
+        source = 'TPU8x10' if mode=='Gray' else 'Flatbed'
+
+        cmdStr = 'scanimage --source %s --mode %s --resolution %i --format=tiff --device-name=%s > %s%s_rawscan%s_%s.tiff'%(source, mode, resolution, scanner, rdir, prefix, i, postfix)
         check_output(cmdStr, shell=True)
 
         for plate in range(ppscan):
@@ -117,7 +119,9 @@ def scan_timecourse(nscans, interval, prefix, postfix, fixture, resolution, geom
     for i in range(1, nscans+1):
         print('Preparing for scan %i out of %i'%(i,nscans))
 
-        cmdStr = 'scanimage --source TPU8x10 --mode %s --resolution %i --format=tiff --device-name=%s > %s%s_rawscan%i_%s.tiff'%(mode,resolution, scanner, rdir, prefix, i, postfix)
+        source = 'TPU8x10' if mode=='Gray' else 'Flatbed'
+        
+        cmdStr = 'scanimage --source %s --mode %s --resolution %i --format=tiff --device-name=%s > %s%s_rawscan%i_%s.tiff'%(source, mode, resolution, scanner, rdir, prefix, i, postfix)
         check_output(cmdStr, shell=True)
 
         for plate in range(ppscan):

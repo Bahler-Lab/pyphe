@@ -1,11 +1,16 @@
-
+import os
 import numpy as np
+import pandas as pd
+from warnings import warn
 
-from warning import warn
+from scipy.spatial import distance
+
 from skimage.filters import threshold_otsu
 from skimage.morphology import remove_small_objects
 from skimage.segmentation import clear_border
 from skimage.util import invert
+from skimage.measure import regionprops, label
+from skimage.color import label2rgb
 
 
 def make_grid(gd):
@@ -19,15 +24,45 @@ def make_grid(gd):
     
     griddistx = xpos[1] - xpos[0]
     griddisty = ypos[1] - ypos[0]
+    
     #Check if spacing similar
-    if (abs(griddistx-griddisty)/(0.5*(griddistx+griddisty)) > 0.1:
+    if (abs(griddistx-griddisty)/(0.5*(griddistx+griddisty))) > 0.1:
         warn('Uneven spacing between rows and columns. Are you sure this is intended?')
    
-    return zip(xpos,ypos), 0.5*(griddistx+griddisty)
+    #Make dictionary of grid positions
+    grid = {}
+    for r in range(rows):
+        for c in range(cols):
+            grid[(r+1,c+1)] = (ypos[r], xpos[c])
+            
+    return grid, 0.5*(griddistx+griddisty)
 
 
-def match_to_grid():
-    pass
+def match_to_grid(labels, centroids, grid, griddist, d=3, onlyNearestQ=True):
+    '''
+    From a list of grid positions and a list of centroids, construct a distance matrix between all pairs and return the best fits as a dictionary.
+    '''
+    
+    #Construct distance matrix as pandas table
+    dm = distance.cdist(np.array(list(centroids)), np.array(list(grid.values())), metric='euclidean')
+    dm = pd.DataFrame(dm, index=labels, columns=map(lambda x: '-'.join(map(str,x)),grid.keys()))
+            
+    #Select matches
+    dm[dm>(griddist/d)] = np.nan
+
+    if onlyNearestQ:
+        dm = dm.idxmin(axis=1)
+        dm = dm.dropna()
+        dm = dm.to_dict()
+        
+    else:
+        dm = dm.stack()
+        dm = dm.dropna()
+        dm = dm.reset_index()
+        dm = dict(zip(dm['level_1'], dm['level_0']))
+            
+    return dm
+
 
 def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
     '''
@@ -37,15 +72,15 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
     if hardImageThreshold:
         thresh = hardImageThreshold
     else:
-        thresh = t*threshold_otsu
+        thresh = t*threshold_otsu(image)
         
     mask = image>thresh
     
-    #Filter small components. The default threshold is 0.001% of the image area 
+    #Filter small components. The default threshold is 0.0001% of the image area 
     if hardSizeThreshold:
         size_thresh = hardSizeThreshold
     else:
-        size_thresh = s * image.shape[0] * image.shape[1] * 0.00001
+        size_thresh = s * image.shape[0] * image.shape[1] * 0.000001
     mask = remove_small_objects(mask, min_size=size_thresh)
     
     #Fill holes?? In future
@@ -53,76 +88,72 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
     #Clear border
     mask = clear_border(mask)
     
+    #Label connected components
+    mask = label(mask)
+    
     return mask
     
-def single_image_batchMode(image):
-    
-    
-    
-def quantify_batch(images, grid, griddist, t=1, d=1, s=1, negate=True, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
-	
 
-    for i,im in enumerate(images):
+def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
+    
+    image = np.copy(orig_image)
+    
+    #Check if images are grayscale and convert if necessary
+    if len(image.shape) == 3:
+        warn('The following is not a greyscale image and will be converted before processing: %s'%images.files[i])
+        image = image[:,:,0] + image[:,:,1] + image[:,:,2]
+
+    #Convert to float and re-scale to [0,1]            
+    image = image.astype(float)
+    image = image / 255.0
+    
+    #Negate images if required
+    if negate:
+        image = invert(image)
         
-        #Check if images are grayscale and convert if necessary
-        if len(im.shape) == 3:
-            warn('The following is not a greyscale image and will be converted before processing: %s'%images.files[i])
-            images[i] = images[i][:,:,0] + images[i][:,:,1] + images[i][:,:,2]
+    #Make mask and label
+    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+    
+    #Measure regionprobs
+    data = {r.label : {p : r[p] for p in ['label', 'area', 'centroid', 'mean_intensity', 'perimeter']} for r in regionprops(mask, intensity_image=image)}
+    data = pd.DataFrame(data).transpose()
+    
+    blob_to_pos = match_to_grid(data['label'], data['centroid'], grid, griddist, d=d, onlyNearestQ=onlyNearestQ)
+    
+    #Select only those blobs which have a corresponding grid position
+    data = data.loc[[l in blob_to_pos for l in data['label']]]
+    #Add grid position information to table
+    data['row'] = data['label'].map(lambda x: blob_to_pos[x].split('-')[0])
+    data['column'] = data['label'].map(lambda x: blob_to_pos[x].split('-')[1])
+    
+    #Make qc image
+    qc = label2rgb(mask, image=orig_image, bg_label=0)
 
-        #Convert to float and re-scale to [0,1]            
-        images[i] = images[i].astype(float)
-        images[i] = images[i] - np.min(images[i])
-        images[i] = images[i] / np.max(images[i])
+    return (data, qc)
+    
+def quantify_batch(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
+    '''
+    Analyse batches of plates.
+    '''
+
+    for fname, im in zip(images.files, images):
+        data, qc_image = quantify_single_image_fromBatch(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, onlyNearestQ=onlyNearestQ, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+        data.to_csv(os.path.join(out, fname+'.csv'))
+    
+        #Add labels and grid positions to qc image and save
+        fig, ax = plt.subplots()
+        ax.imshow(qc_image)
+        for i,r in data.iterrows():
+            ax.text(r['centroid'][1], r['centroid'][0], str(r['row'])+'-'+str(r['column']), fontdict={'size':1, 'color':'w'})
+        #Maybe add lines for grid positions later
+        plt.savefig(os.path.join(qc, 'qc_'+fname+'.png'), dpi=900)
+        plt.clf()
+        plt.close()
         
-        #Negate images if required
-        images[i] = invert(images[i])
-
-    
-
-    
-    
-    
-	Batch[toAnalyse_] :=
-    Module[{analyse},
-        analyse[imagePath_] := 
-            Module[{image, mask, posDict, headers, data, baseStr, background, backgroundInt, gtlAssoc, areas, intensities}, 
-                baseStr = StringSplit[StringSplit[imagePath, "/"][[-1]], "."][[;;-2]];
-            
-                image = If[negateQ, ColorNegate[Import[imagePath]], Import[imagePath]];
-                mask = MakeMask[image];
-                posDict = MatchComponentsToGrid[mask, baseStr][[1]];
-                gtlAssoc = MatchComponentsToGrid[mask, baseStr][[2]];
-
-                (*Find background intensitiy*)
-                background = Table[1, {i, Dimensions[mask][[1]]}, {j, Dimensions[mask][[2]]}] - Unitize[mask];
-                backgroundInt = ComponentMeasurements[{background, image}, "MeanIntensity"];
-                
-                (*Measure area and intensities*)
-                areas = Association[ComponentMeasurements[{mask, image}, "Area"]];
-                intensities = ComponentMeasurements[{mask, image}, "IntensityData"];
-                intensities[[All, 2]] = intensities[[All, 2]] - backgroundInt[[1, 2]];
-                intensities = Map[Total, Association[intensities]];
-
-		(*Measure other things*)
-		perimeters = Association[ComponentMeasurements[{mask, image}, "PerimeterLength"]];
-		circularities = Association[ComponentMeasurements[{mask, image}, "Circularity"]];
-                centroids = Association[ComponentMeasurements[{mask, image}, "Centroid"]];
-		centroidsx = Map[(#[[1]])&,centroids];
-		centroidsy = Map[(#[[2]])&,centroids];
-
-                (*Compile table and export*)
-                data = Table[{gtlAssoc[x[[1]]], x[[1, 1]], x[[1, 2]], areas[x[[2]]], intensities[x[[2]]], perimeters[x[[2]]], circularities[x[[2]]], centroidsx[x[[2]]], centroidsy[x[[2]]]}, {x, posDict}];
-                headers = {"Position", "Row", "Column", "Area", "IntegratedIntensity", "PerimeterLength", "Circularity", "Centroid-x", "Centroid-y"};
-
-                Export[StringJoin["maya_results/", baseStr, ".csv"], Join[{headers}, data], "CSV"];
-                ];
-                
-        If[parallelQ, ParallelDo[analyse[imagePath], {imagePath, toAnalyse}], Do[analyse[imagePath], {imagePath, toAnalyse}]]];
-      
 def quantify_timecourse(images, grid, griddist, t=1, d=1, s=1, negate=True, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
-	pass
+    pass
 
     #Check if images are grayscale
 
 def quantify_redness(images, grid, griddist, t=1, d=1, s=1, negate=False, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
-	pass
+    pass

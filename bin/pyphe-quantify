@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('--d', type=float, default=3, help='')
     parser.add_argument('--s', type=int, default=1, help='')
     parser.add_argument('--negate', type=bool, default=True, help='')
-    parser.add_argument('--onlyNearestQ',  type=bool, default=True, help='')
+    parser.add_argument('--reportAll', default=False, action='store_true', help='')
     parser.add_argument('--hardImageThreshold', type=float, help='')
     parser.add_argument('--hardSizeThreshold', type=float, help='')
     parser.add_argument('--qc', type=str, default='qc_images', help='Directory to save qc images in. Defaults to "qc_images".')

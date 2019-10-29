@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from warnings import warn
-
+from matplotlib import pyplot as plt
 from scipy.spatial import distance
 
 from skimage.filters import threshold_otsu
@@ -38,7 +38,7 @@ def make_grid(gd):
     return grid, 0.5*(griddistx+griddisty)
 
 
-def match_to_grid(labels, centroids, grid, griddist, d=3, onlyNearestQ=True):
+def match_to_grid(labels, centroids, grid, griddist, d=3, reportAll=False):
     '''
     From a list of grid positions and a list of centroids, construct a distance matrix between all pairs and return the best fits as a dictionary.
     '''
@@ -50,16 +50,20 @@ def match_to_grid(labels, centroids, grid, griddist, d=3, onlyNearestQ=True):
     #Select matches
     dm[dm>(griddist/d)] = np.nan
 
-    if onlyNearestQ:
+    if not reportAll:
+        #Find best match for each grid position
+        dm = dm.idxmin(axis=0)
+        dm = dm.dropna().astype(int)
+        #Swap index and values
+        #There should never be a blob associated to two blob positions since d>2 is enforced in the command line interface
+        dm = pd.Series(dm.index.values, index=dm)
+        dm = dm.to_dict()        
+        
+    else:
+        #Find best match for each blob
         dm = dm.idxmin(axis=1)
         dm = dm.dropna()
         dm = dm.to_dict()
-        
-    else:
-        dm = dm.stack()
-        dm = dm.dropna()
-        dm = dm.reset_index()
-        dm = dict(zip(dm['level_1'], dm['level_0']))
             
     return dm
 
@@ -94,7 +98,7 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
     return mask
     
 
-def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
     
     image = np.copy(orig_image)
     
@@ -118,7 +122,7 @@ def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, n
     data = {r.label : {p : r[p] for p in ['label', 'area', 'centroid', 'mean_intensity', 'perimeter']} for r in regionprops(mask, intensity_image=image)}
     data = pd.DataFrame(data).transpose()
     
-    blob_to_pos = match_to_grid(data['label'], data['centroid'], grid, griddist, d=d, onlyNearestQ=onlyNearestQ)
+    blob_to_pos = match_to_grid(data['label'], data['centroid'], grid, griddist, d=d, reportAll=reportAll)
     
     #Select only those blobs which have a corresponding grid position
     data = data.loc[[l in blob_to_pos for l in data['label']]]
@@ -131,13 +135,14 @@ def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, n
 
     return (data, qc)
     
-def quantify_batch(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_batch(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
     '''
     Analyse batches of plates.
     '''
 
     for fname, im in zip(images.files, images):
-        data, qc_image = quantify_single_image_fromBatch(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, onlyNearestQ=onlyNearestQ, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+        data, qc_image = quantify_single_image_fromBatch(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+        data = data.drop('label', axis=1)
         data.to_csv(os.path.join(out, fname+'.csv'))
     
         #Add labels and grid positions to qc image and save
@@ -150,10 +155,10 @@ def quantify_batch(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=
         plt.clf()
         plt.close()
         
-def quantify_timecourse(images, grid, griddist, t=1, d=1, s=1, negate=True, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_timecourse(images, grid, griddist, t=1, d=1, s=1, negate=True, reportAll=True, hardImageThreshold=None, hardSizeThreshold=None):
     pass
 
     #Check if images are grayscale
 
-def quantify_redness(images, grid, griddist, t=1, d=1, s=1, negate=False, onlyNearestQ=True, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_redness(images, grid, griddist, t=1, d=1, s=1, negate=False, reportAll=True, hardImageThreshold=None, hardSizeThreshold=None):
     pass

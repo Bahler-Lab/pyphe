@@ -98,6 +98,7 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
     
     return mask
 
+
 def check_and_negate(orig_image, negate=True):
     
     image = np.copy(orig_image)

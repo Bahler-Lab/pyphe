@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+import math
 from warnings import warn
 from matplotlib import pyplot as plt
 from scipy.spatial import distance
@@ -126,9 +127,13 @@ def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, n
     
     #Select only those blobs which have a corresponding grid position
     data = data.loc[[l in blob_to_pos for l in data['label']]]
+    
     #Add grid position information to table
     data['row'] = data['label'].map(lambda x: blob_to_pos[x].split('-')[0])
     data['column'] = data['label'].map(lambda x: blob_to_pos[x].split('-')[1])
+    
+    #Add circularity
+    data['circularity'] = (4 * math.pi * data['area']) / (data['perimeter']**2)
     
     #Make qc image
     qc = label2rgb(mask, image=orig_image, bg_label=0)

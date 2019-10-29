@@ -97,9 +97,8 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
     mask = label(mask)
     
     return mask
-    
 
-def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+def check_and_negate(orig_image, negate=True):
     
     image = np.copy(orig_image)
     
@@ -116,7 +115,14 @@ def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, n
     if negate:
         image = invert(image)
         
-    #Make mask and label
+    return image
+
+def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+    
+    #Check and negate image
+    image = check_and_negate(orig_image, negate=negate)
+        
+    #Make mask
     mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
     
     #Measure regionprobs
@@ -147,23 +153,90 @@ def quantify_batch(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=
 
     for fname, im in zip(images.files, images):
         data, qc_image = quantify_single_image_fromBatch(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
-        data = data.drop('label', axis=1)
-        data.to_csv(os.path.join(out, fname+'.csv'))
+        if not reportAll:
+            data = data.drop('label', axis=1)
+        
+        image_name = os.path.basename(fname)
+        data.to_csv(os.path.join(out, image_name+'.csv'))
     
         #Add labels and grid positions to qc image and save
         fig, ax = plt.subplots()
         ax.imshow(qc_image)
-        for i,r in data.iterrows():
-            ax.text(r['centroid'][1], r['centroid'][0], str(r['row'])+'-'+str(r['column']), fontdict={'size':1, 'color':'w'})
-        #Maybe add lines for grid positions later
-        plt.savefig(os.path.join(qc, 'qc_'+fname+'.png'), dpi=900)
+        if not reportAll:
+            for i,r in data.iterrows():
+                ax.text(r['centroid'][1], r['centroid'][0], str(r['row'])+'-'+str(r['column']), fontdict={'size':1, 'color':'w'})
+        else:
+            for i,r in data.iterrows():
+                ax.text(r['centroid'][1], r['centroid'][0], str(r['label']), fontdict={'size':1.5, 'color':'w'})
+        
+        plt.savefig(os.path.join(qc, 'qc_'+image_name+'.png'), dpi=900)
         plt.clf()
         plt.close()
-        
-def quantify_timecourse(images, grid, griddist, t=1, d=1, s=1, negate=True, reportAll=True, hardImageThreshold=None, hardSizeThreshold=None):
-    pass
 
-    #Check if images are grayscale
+def quantify_single_image_fromTimecourse(orig_image, mask, negate=True):
+    
+    #Check and negate  image
+    image = check_and_negate(orig_image, negate=negate)
+
+    #Get background intensity
+    bgmask = (mask==0).astype(int)
+    bgdata = {r.label : r['mean_intensity'] for r in regionprops(bgmask, intensity_image=image)}
+    bgmean = bgdata[1]
+    #subtract mean background from image, floor again to avoid rare case of negative values
+    image = image - bgmean
+    image[image<0] = 0
+
+    #Get intensity data for each blob
+    data = {r.label : r['mean_intensity'] for r in regionprops(mask, intensity_image=image)}
+
+    return data
+
+        
+def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+    '''
+    Analyse a timeseries of images. Make the mask based on the last image and extract intensity information from all previous images based on that.
+    '''
+    #Check and negate final image
+    fimage = check_and_negate(images[-1], negate=negate)
+    
+    #Make mask
+    mask = make_mask(fimage, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+    
+    #Make table of intensities over time
+    data = {fname : quantify_single_image_fromTimecourse(orig_image, mask, negate=negate) for fname,orig_image in zip(images.files, images)}
+    data = pd.DataFrame(data).transpose()
+    
+    #Get centroids and match to positions
+    centroids = {r.label : r['centroid'] for r in regionprops(mask)}
+    blob_to_pos = match_to_grid(centroids.keys(), centroids.values(), grid, griddist, d=d, reportAll=reportAll)
+    
+    #Select only those blobs which have a corresponding grid position
+    data = data.loc[:,[l in blob_to_pos for l in data.columns]]
+    
+    #If not reportAll, replace blobs by grid position information and sort
+    if not reportAll:
+        data.columns = data.columns.map(lambda x: blob_to_pos[x])
+        data = data[sorted(list(data), key=lambda x: 100*int(x.split('-')[0]) + int(x.split('-')[1]))]
+    #Save table
+    image_name = os.path.basename(images.files[-1])
+    data.to_csv(os.path.join(out, image_name+'.csv'))
+
+    #make qc image
+    qc_image = label2rgb(mask, image=images[-1], bg_label=0)
+    fig, ax = plt.subplots()
+    ax.imshow(qc_image)
+    if not reportAll:
+        for blob in blob_to_pos:
+            ax.text(centroids[blob][1], centroids[blob][0], blob_to_pos[blob], fontdict={'size':1.5, 'color':'w'})
+    else:
+        for blob in blob_to_pos:
+            ax.text(centroids[blob][1], centroids[blob][0], blob, fontdict={'size':1.5, 'color':'w'})
+
+    plt.savefig(os.path.join(qc, 'qc_'+image_name+'.png'), dpi=900)
+    plt.clf()
+    plt.close()
+    
+    
 
 def quantify_redness(images, grid, griddist, t=1, d=1, s=1, negate=False, reportAll=True, hardImageThreshold=None, hardSizeThreshold=None):
     pass

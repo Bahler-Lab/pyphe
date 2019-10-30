@@ -15,8 +15,9 @@ if __name__ == '__main__':
     parser.add_argument('--t', type=float, default=1, help='')
     parser.add_argument('--d', type=float, default=3, help='')
     parser.add_argument('--s', type=int, default=1, help='')
-    parser.add_argument('--negate', type=bool, default=True, help='')
+    parser.add_argument('--negate', type=bool, default=True, help='Ignored in redness mode.')
     parser.add_argument('--reportAll', default=False, action='store_true', help='')
+    parser.add_argument('--reportFileNames', default=False, action='store_true', help='Only for timecourse mode, otherwise ignored. Use filenames as index for output table instead of timepoints. Useful when the ordering of timepoints is not the same as returned by the pattern.')
     parser.add_argument('--hardImageThreshold', type=float, help='')
     parser.add_argument('--hardSizeThreshold', type=float, help='')
     parser.add_argument('--qc', type=str, default='qc_images', help='Directory to save qc images in. Defaults to "qc_images".')
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     if grid == 'som3_384':
         grid = '16-24-1-2-3-4'
     if grid == 'som3_1536':
-        grid = '32-48-1-2-3-4'
+        grid = '32-48-43-50-2545-1690'
         
     #If user defined grid, check if in the right format
     if not len(grid.split('-'))==6:
@@ -73,12 +74,10 @@ if __name__ == '__main__':
     arg_dict.pop('mode')
     arg_dict.pop('pattern')
 
-    if args.mode == 'batch':
-        quantify.quantify_batch(images, grid, griddist, **arg_dict)        
+    if (args.mode == 'batch') or (args.mode == 'redness'):
+        quantify.quantify_batch(images, grid, griddist, args.mode, **arg_dict)        
     if args.mode == 'timecourse':
         quantify.quantify_timecourse(images, grid, griddist, **arg_dict)        
-    if args.mode == 'redness':
-        quantify.quantify_redness(images, grid, griddist, **arg_dict)
        
     print('Analysis complete.')
 

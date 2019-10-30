@@ -152,13 +152,28 @@ More help is available by running: pyphe-growthcurves --help
                             scaled to the data.
                             
 
-
 ### Pyphe-quantify
+
+
+
+
+### Pyphe-analyse
 Pyphe quantify is a tool for spatial normalisation and data aggregation across many plates. It implements a grid normalisation based on the concept proposed by [Zackrisson et al. 2016]((https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5015956/) and row/column median normalisation. Please see our paper and the protocol in it to find out more. Calling _pyphe-analyse_ from the command line will open the GUI.
+
 ![pyphe-analyse GUI](https://github.com/Bahler-Lab/pyphe/blob/master/icons/gui.png)
 
-### Pyphe analyse
-
+| Option        | Explanation  |
+| ---------------- |---------------|
+|working directory| |
+|path to table| |
+|load layout|  |
+|perform grid normalisation| |
+|select grid position| |
+|extrapolate missing corners| |
+|perform row/column median normaisation| |
+|check data| |
+|make qc plots| |
+|output file| |
 
 ## Support and FAQs
 If you run into trouble, please check if your problem is discussed below. If not, feel free to send an email to stephan.kamrad@crick.ac.uk or raise an issue here on github. 

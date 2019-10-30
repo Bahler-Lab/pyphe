@@ -6,7 +6,7 @@ from warnings import warn
 from matplotlib import pyplot as plt
 from scipy.spatial import distance
 
-from skimage.filters import threshold_otsu
+from skimage.filters import threshold_otsu, gaussian
 from skimage.morphology import remove_small_objects
 from skimage.segmentation import clear_border
 from skimage.util import invert
@@ -81,11 +81,11 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
         
     mask = image>thresh
     
-    #Filter small components. The default threshold is 0.0001% of the image area 
+    #Filter small components. The default threshold is 0.00005 of the image area 
     if hardSizeThreshold:
         size_thresh = hardSizeThreshold
     else:
-        size_thresh = s * image.shape[0] * image.shape[1] * 0.000001
+        size_thresh = s * np.prod(image.shape) * 0.00005
     mask = remove_small_objects(mask, min_size=size_thresh)
     
     #Fill holes?? In future
@@ -97,7 +97,6 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
     mask = label(mask)
     
     return mask
-
 
 def check_and_negate(orig_image, negate=True):
     
@@ -118,12 +117,21 @@ def check_and_negate(orig_image, negate=True):
         
     return image
 
-def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_single_image(orig_image, grid, griddist, mode, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
     
-    #Check and negate image
-    image = check_and_negate(orig_image, negate=negate)
+    #Prepare image
+    #If in batch mode, check that image is greyscale and negate
+    if mode == 'batch':
+        image = check_and_negate(orig_image, negate=negate)
+    elif mode == 'redness':
+        image = prepare_redness_image(orig_image)
+    else:
+        raise ValueError('Unrecognised mode. Must be batch or redness.')
         
     #Make mask
+    #Adjust threshold for redness images slightly, just what works in practise. t parameter is still applied as additional coefficient
+    if mode == 'redness':
+        t = t*1.1
     mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
     
     #Measure regionprobs
@@ -143,33 +151,40 @@ def quantify_single_image_fromBatch(orig_image, grid, griddist, t=1, d=3, s=1, n
     data['circularity'] = (4 * math.pi * data['area']) / (data['perimeter']**2)
     
     #Make qc image
-    qc = label2rgb(mask, image=orig_image, bg_label=0)
-
+    if mode == 'batch':
+        qc = label2rgb(mask, image=orig_image, bg_label=0)
+    else:
+        qc = orig_image
+    
     return (data, qc)
     
-def quantify_batch(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_batch(images, grid, griddist, mode, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=None, hardImageThreshold=None, hardSizeThreshold=None):
     '''
-    Analyse batches of plates.
+    Analyse colony size for batch of plates. Depending on mode, either the quantify_single_image_grey or quantify_single_image_redness function is applied to all images.
     '''
 
     for fname, im in zip(images.files, images):
-        data, qc_image = quantify_single_image_fromBatch(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
-        if not reportAll:
-            data = data.drop('label', axis=1)
+        
+        data, qc_image = quantify_single_image(np.copy(im), grid, griddist, mode, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
         
         image_name = os.path.basename(fname)
-        data.to_csv(os.path.join(out, image_name+'.csv'))
+        if not reportAll:
+            data.drop('label', axis=1).to_csv(os.path.join(out, image_name+'.csv'))
+        else:
+            data.to_csv(os.path.join(out, image_name+'.csv'))
     
         #Add labels and grid positions to qc image and save
         fig, ax = plt.subplots()
         ax.imshow(qc_image)
         if not reportAll:
-            for i,r in data.iterrows():
-                ax.text(r['centroid'][1], r['centroid'][0], str(r['row'])+'-'+str(r['column']), fontdict={'size':1, 'color':'w'})
+            data['annot'] = data['row'].astype(str) + '-' + data['column'].astype(str)
         else:
-            for i,r in data.iterrows():
-                ax.text(r['centroid'][1], r['centroid'][0], str(r['label']), fontdict={'size':1.5, 'color':'w'})
-        
+            data['annot'] = data['label']
+        if mode == 'redness':
+            data['annot'] = data['annot'] + '\n' + data['mean_intensity'].astype(float).round(4).astype(str)
+        for i,r in data.iterrows():
+            ax.text(r['centroid'][1], r['centroid'][0], r['annot'], fontdict={'size':1.5, 'color':'w'})
+                
         plt.savefig(os.path.join(qc, 'qc_'+image_name+'.png'), dpi=900)
         plt.clf()
         plt.close()
@@ -193,7 +208,7 @@ def quantify_single_image_fromTimecourse(orig_image, mask, negate=True):
     return data
 
         
-def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None):
     '''
     Analyse a timeseries of images. Make the mask based on the last image and extract intensity information from all previous images based on that.
     '''
@@ -218,6 +233,9 @@ def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant
     if not reportAll:
         data.columns = data.columns.map(lambda x: blob_to_pos[x])
         data = data[sorted(list(data), key=lambda x: 100*int(x.split('-')[0]) + int(x.split('-')[1]))]
+    if not reportFileNames:
+        data.index = range(1,len(data.index)+1)
+        
     #Save table
     image_name = os.path.basename(images.files[-1])
     data.to_csv(os.path.join(out, image_name+'.csv'))
@@ -236,8 +254,28 @@ def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant
     plt.savefig(os.path.join(qc, 'qc_'+image_name+'.png'), dpi=900)
     plt.clf()
     plt.close()
+
+def prepare_redness_image(orig_image):
+    '''
+    Prepare image for thresholding and analysis. Channels are weighted by (0, 0.5, 1) and summed. The background is estimated by gaussian blur and subtracted. The image is inverted.
+    '''
+    image = np.copy(orig_image)
+
+    #Color channel transformations and convert to grey
+    image = 0.5*image[:,:,1] + 1*image[:,:,2]
+    #Convert to float and rescale to range [0,1]
+    #I don't think other fancier methods for histogram normalisation are suitable or required since simple thresholding is applied later
+
+    #Estimate background by gaussian. Scale sigma with image area to compensate for different resolutions
+    background = gaussian(image, sigma=np.prod(image.shape)/10000, truncate=10) 
+    image = image - background #This may contain some negative values but not a problem here
+
+    #Scale image to [0,1] in invert
+    image = image.astype(float)
+    image = image - np.min(image)
+    image = image/np.max(image)
+    image = 1 - image
     
+    return image
     
 
-def quantify_redness(images, grid, griddist, t=1, d=1, s=1, negate=False, reportAll=True, hardImageThreshold=None, hardSizeThreshold=None):
-    pass

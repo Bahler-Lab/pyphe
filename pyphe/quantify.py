@@ -99,7 +99,9 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
     return mask
 
 def check_and_negate(orig_image, negate=True):
-    
+    '''
+    Check if image is greyscale, convert if it isn't. Convert to float and invert intensities.
+    '''
     image = np.copy(orig_image)
     
     #Check if images are grayscale and convert if necessary
@@ -118,6 +120,9 @@ def check_and_negate(orig_image, negate=True):
     return image
 
 def quantify_single_image(orig_image, grid, griddist, mode, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+    '''
+    Process a single image (phloxine or batch mode).
+    '''
     
     #Prepare image
     #If in batch mode, check that image is greyscale and negate
@@ -190,6 +195,9 @@ def quantify_batch(images, grid, griddist, mode, qc='qc_images', out='pyphe_quan
         plt.close()
 
 def quantify_single_image_fromTimecourse(orig_image, mask, negate=True):
+    '''
+    Apply a previously determined mask to an image from a timeseries.
+    '''
     
     #Check and negate  image
     image = check_and_negate(orig_image, negate=negate)

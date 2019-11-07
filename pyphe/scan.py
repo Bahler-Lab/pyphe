@@ -29,6 +29,10 @@ def find_scanner(scanner_index):
     return scanner
     
 def scan_batch(n, plateStart, prefix, postfix, fixture, resolution, geometries, scanner, mode):
+    '''
+    High-level function for scanning a batch of plates. 
+    '''
+    
     ppscan = len(geometries[fixture])#plates per scan
 
     #Get geometry string and adapt to resolution
@@ -85,6 +89,9 @@ def scan_batch(n, plateStart, prefix, postfix, fixture, resolution, geometries, 
     
 
 def scan_timecourse(nscans, interval, prefix, postfix, fixture, resolution, geometries, scanner, mode):
+    '''
+    High-level function for acquiring image timeseries.
+    '''
  
     ppscan = len(geometries[fixture])#plates per scan
     

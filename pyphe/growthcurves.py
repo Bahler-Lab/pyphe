@@ -5,6 +5,15 @@ from scipy import stats
 def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold, plots, plot_ylim):
     '''
     Function for analysing a csv containing growthcurves.
+    
+    Arguments:
+    gdata (pandas.DataFrame) -- DataFrame containing growth data. The index must be the timepoints and column IDs must be unique.
+    fitrange (int) -- The number of timepoints over which to fit the linear regression.
+    t0_fitrange (int) -- The number of timepoints to use to estimate the initial biomass which is the mean over those timepoints.
+    lag_method (str) -- Method to use to determine lag phase. Currently supported: rel_threshold and abs_threshold.
+    lag_threshold (float) -- The threshold value to use. The lag phase will be determined as the time it takes for the biomass to exceed this value (for abs_threshold) or t0*threshold for rel_threshold.
+    plots (bool) --  Produce pdf document of growth curve plots.
+    plot_ylim (float) -- Set plot upper limits of y-axis.
     '''
     
     t = gdata.index.tolist()

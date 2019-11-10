@@ -28,15 +28,15 @@ if __name__ == '__main__':
     #Check that coefficients are within bounds
     if not args.t > 0:
         raise ValueError('t must be > 0.')
-    if not args.d > 2:
-        raise ValueError('d must be > 2.')
+    if not args.d >= 2:
+        raise ValueError('d must be >= 2.')
     if not args.s>0:
         raise ValueError('s must be > 0.')
     
     ###Load images as collection###
     images = ImageCollection(args.pattern, conserve_memory=True)
     if not len(images) > 0:
-        raise ValueError('No images to analyse. By default all .jpg images in the current working directory will be analysed. The folder and file type can be changed using the --pattern option')
+        raise ValueError('No images to analyse. By default all .jpg images in the current working directory will be analysed. The folder and file type can be changed using the --pattern option.')
     print('Starting analysis of %i images in %s mode'%(len(images), args.mode))
     
     ###Make grid###
@@ -45,14 +45,13 @@ if __name__ == '__main__':
     if grid == 'som3_96':
         grid = '8-12-1-2-3-4'
     if grid == 'som3_384':
-        grid = '16-24-1-2-3-4'
+        grid = '16-24-30-38-1254-821'
     if grid == 'som3_1536':
         grid = '32-48-43-50-2545-1690'
         
     #If user defined grid, check if in the right format
     if not len(grid.split('-'))==6:
         raise ValueError('Grid definition not in correct format. Must be one of som3_96, som3_384, som3_1536 or a custom grid definition consisting of 6 integers separated by "-".')
-    
     grid = grid.split('-')
     try:
         grid = list(map(int, grid))

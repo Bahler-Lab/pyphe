@@ -6,7 +6,7 @@ from warnings import warn
 from matplotlib import pyplot as plt
 from scipy.spatial import distance
 
-from skimage.filters import threshold_otsu, gaussian
+from skimage.filters import threshold_otsu, gaussian, threshold_local
 from skimage.morphology import remove_small_objects
 from skimage.segmentation import clear_border
 from skimage.util import invert
@@ -69,17 +69,21 @@ def match_to_grid(labels, centroids, grid, griddist, d=3, reportAll=False):
     return dm
 
 
-def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None):
+def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None, local=False):
     '''
     Identifies suitable morphological components from image by thresholding.
     '''
     
-    if hardImageThreshold:
-        thresh = hardImageThreshold
+    if local:
+        mask = image > t*threshold_local(image, 151)
+
     else:
-        thresh = t*threshold_otsu(image)
-        
-    mask = image>thresh
+        if hardImageThreshold:
+            thresh = hardImageThreshold
+        else:
+            thresh = t*threshold_otsu(image)
+            
+        mask = image>thresh
     
     #Filter small components. The default threshold is 0.00005 of the image area 
     if hardSizeThreshold:
@@ -135,9 +139,11 @@ def quantify_single_image(orig_image, grid, griddist, mode, t=1, d=3, s=1, negat
         
     #Make mask
     #Adjust threshold for redness images slightly, just what works in practise. t parameter is still applied as additional coefficient
+    local_thresholding = False
     if mode == 'redness':
-        t = t*1.1
-    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+        t = t*1.02
+        local_thresholding = True
+    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=local_thresholding)
     
     #Measure regionprobs
     data = {r.label : {p : r[p] for p in ['label', 'area', 'centroid', 'mean_intensity', 'perimeter']} for r in regionprops(mask, intensity_image=image)}
@@ -275,8 +281,8 @@ def prepare_redness_image(orig_image):
     #I don't think other fancier methods for histogram normalisation are suitable or required since simple thresholding is applied later
 
     #Estimate background by gaussian. Scale sigma with image area to compensate for different resolutions
-    background = gaussian(image, sigma=np.prod(image.shape)/10000, truncate=10) 
-    image = image - background #This may contain some negative values but not a problem here
+    background = gaussian(image, sigma=np.prod(image.shape)/10000, truncate=4) 
+    image = image - background #This may contain some negative values
 
     #Scale image to [0,1] in invert
     image = image.astype(float)

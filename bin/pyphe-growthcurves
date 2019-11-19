@@ -5,7 +5,7 @@ import pandas as pd
 from pyphe import growthcurves
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Welcome to pyphe-growthcurves, a light-weight script for non-parametric analysis of microbial growth curves. Written by stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-Lab/pyphe-growthcurves.')
+    parser = argparse.ArgumentParser(description='Welcome to pyphe-growthcurves, part of the pyphe toolbox. Written by stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-Lab/pyphe.')
     
     parser.add_argument('--input', type=str, required=True, help='Path to the growth curve file to analyse. This file contains one growth curve per column. The first column must be the timepoints and there must be a header row with unique identifiers for each curve.')
     

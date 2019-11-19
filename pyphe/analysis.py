@@ -411,10 +411,6 @@ dirPath (str) - path of the directory to create.
         os.mkdir(dirPath)
 
 
-import os
-import pandas as pd
-import pyphe as pp
-import numpy as np
 
 def check_exp_data(exp_data, layouts=False):
     print('Checking exp_data table')

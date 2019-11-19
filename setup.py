@@ -15,7 +15,6 @@ setup(name='pyphe',
           'numpy',
           'seaborn',
           'scipy',
-          'PySimpleGUI',
           'scikit-image',
       ],
       zip_safe=False)

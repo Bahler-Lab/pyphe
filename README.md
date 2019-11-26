@@ -10,7 +10,7 @@ Please see our preprint for a detailed description of the algorithms and applica
 1. We recommend to run pyphe on a Linux OS. It is possible to install pyphe on other platforms but calling scripts from the command line is not so straight-forward in Windows. Scanning requires a Linux OS with a correctly configured [SANE driver](http://www.sane-project.org/) and [ImageMagick](https://imagemagick.org/) installed.
 2. Pyphe requires Python 3 and a few common packages, available through the [anaconda distribution](https://www.anaconda.com/distribution/).
 3. Install pyphe by running 'pip install pyphe' in your terminal.
-4. Open a new terminal and try and run 'pyphe-quantify -h' which should show the help page of one of pyphe's command line tools. See here for what to do if you're on Windows.
+4. Open a new terminal and try and run 'pyphe-quantify -h' which should show the help page of one of pyphe's command line tools. See the FAQs at the end for what to do if you're on Windows.
 
 
 ## Overview
@@ -19,10 +19,17 @@ A typical fitness screen with pyphe will involve:
 2. Quantification of colony properties from images using _pyphe-quantify_. In the case of growth curves, parameters are additionally extracted with _pyphe-growthcurves_.
 3. Normalisation and data aggregation using _pyphe-analyse_.
 
-Please see our paper for a detailed protocol.
+Please see our paper for a detailed protocol and explanations of the algorithms.
+
+
+## Support
+Please check the manuals below carefully, they are also available in the terminal by running the command with the -h option only. If things are still not working, please email me (stephan.kamrad@crick.ac.uk) and I will try and help. If you think you have discovered a bug, or would like to request a new feature, please raise an issue on www.github.com/Bahler-Lab/pyphe.
 
 ## Manual
 
+All pyphe tools have a similar command line interface, based on the python argparse package. Generally, parameters are set using --<parameter_name> optionally followed by a value. All _pyphe_ tools can be used with relative file paths so make sure to navigate to the correct working directory before running a _pyphe_ command.
+
+ 
 ### Pyphe-scan
 This tools allows you to take consecutive scans of sets of plates, which are then automatically cropped, rotated and named in in a continuos filename scheme of your choice. 
 
@@ -51,9 +58,6 @@ usage: pyphe-scan [-h] [--nplates NPLATES] [--start START] [--prefix PREFIX]
                   [--resolution {150,300,600,900,1200}] [--scanner {1,2,3}]
                   [--mode {Gray,Color}]
 
-Welcome to pyphe-scan, part of the pyphe toolbox. Written by
-stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-
-Lab/pyphe
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -82,14 +86,83 @@ All arguments except the fixture have default values and are optional. A folder 
 
 ### Pyphe-scan-timecourse
 
+```
+usage: pyphe-scan-timecourse [-h] [--nscans NSCANS] [--interval INTERVAL]
+                             [--prefix PREFIX] [--postfix POSTFIX]
+                             [--fixture {som3_edge,som3}]
+                             [--resolution {150,300,600,900,1200}]
+                             [--scanner {1,2,3}] [--mode {Gray,Color}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --nscans NSCANS       Number of time points to scan. This defaults to 100
+                        and the script can be terminated by Ctr+C when done.
+  --interval INTERVAL   Time in minutes between scans. Defaults to 20.
+  --prefix PREFIX       Name prefix for output files. The default is the
+                        current date YYYYMMDD.
+  --postfix POSTFIX     Name postfix for output files. Defaults to empty
+                        string.
+  --fixture {som3_edge,som3}
+                        ID of the fixture you are using.
+  --resolution {150,300,600,900,1200}
+                        Resolution for scanning in dpi. Default is 600.
+  --scanner {1,2,3}     Which scanner to use. Scanners are not uniquely
+                        identified and may switch when turned off/unplugged.
+                        This option does not need to be set when only one
+                        scanner is connected.
+  --mode {Gray,Color}   Which color mode to use for scanning. Defaults to
+                        Gray.
+```
+
 ### Pyphe-growthcurves
 This tool performs non-parametric analysis of growth curves. It was written specifically to analyse colony size timeseries data obtained with _pyphe-quantify_ _timeseries_.
 
-#### Getting started
-It is important that your csv with the growth data is in the right format. The file must contain one growth curve per column. The first column must be the timepoints and there must be a header row with unique identifiers for each curve. For example data and expected outputs, check out the files included in this Documentation folder. Sensible default parameters are set for all options but, depending on your data, you may wish to customise these, so check out the help section below.
+It is important that your csv with the growth data is in the right format. The file must contain one growth curve per column. The first column must be the timepoints and there must be a header row with unique identifiers for each curve. For example data and expected outputs, check out the files included in this Documentation folder. Sensible default parameters are set for all options but, depending on your data, you may wish to customise these, so check out the help section below. 
 
-    python pyphe-growthcurves.py --input example_data.csv --plots
-    
+```
+usage: pyphe-growthcurves [-h] --input INPUT [--fitrange FITRANGE]
+                          [--lag-method {abs,rel}]
+                          [--lag-threshold LAG_THRESHOLD]
+                          [--t0-fitrange T0_FITRANGE] [--plots]
+                          [--plot-ylim PLOT_YLIM]
+
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --input INPUT         Path to the growth curve file to analyse. This file
+                        contains one growth curve per column. The first column
+                        must be the timepoints and there must be a header row
+                        with unique identifiers for each curve.
+  --fitrange FITRANGE   Number of timepoint over which to fit linear
+                        regression. Defaults to 4. Please adjust this to the
+                        density of your timepoints and use higher values for
+                        more noisy data.
+  --lag-method {abs,rel}
+                        Method to use for determining lag. "abs" will measure
+                        time until the defined biomass threshold is crossed.
+                        "rel" will fist determine the inital biomass and
+                        measure the time until the biomass has passed this
+                        value times the threshold. Defaults to "rel".
+  --lag-threshold LAG_THRESHOLD
+                        Threshold to use for determining lag. With method
+                        "abs", this will measure time until the defined
+                        biomass threshold is crossed. With "rel" will fist
+                        determine the inital biomass and measure the time
+                        until the biomass has passed this value times the
+                        threshold. Defaults to 2.0, so with method "rel", this
+                        will measure the time taken for the first doubling.
+  --t0-fitrange T0_FITRANGE
+                        Specify the number of timepoint to use at the
+                        beginning of the growth curve to determine the initial
+                        biomass by averaging them. Defaults to 3.
+  --plots               Set this option (no argument required) to produce a
+                        plot of all growthcurves as pdf.
+  --plot-ylim PLOT_YLIM
+                        Specify the upper limit of the y-axis of growth curve
+                        plots. Useful if you want curves to be directly
+                        comparable. If not set, the axis of each curve is
+                        scaled to the data.
+```
 
 
 #### Interpreting results
@@ -105,75 +178,170 @@ Pyphe-growthcurves will produce a csv file with extracted growth parameters. The
 |y-intercept|Y-intercept of the regression which produced the maximum slope|
 |x-intercept|X-intercept of the regression which produced the maximum slope. This is interpreted as lag phase by some people|
 
-
-#### Options
-More help is available by running: pyphe-growthcurves --help
-
-    usage: pyphe-growthcurves.py [-h] --input INPUT [--fitrange FITRANGE]
-                                 [--lag-method {abs,rel}]
-                                 [--lag-threshold LAG_THRESHOLD]
-                                 [--t0-fitrange T0_FITRANGE] [--plots]
-                                 [--plot-ylim PLOT_YLIM]
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      --input INPUT         Path to the growth curve file to analyse. This file
-                            contains one growth curve per column. The first column
-                            must be the timepoints and there must be a header row
-                            with unique identifiers for each curve.
-      --fitrange FITRANGE   Number of timepoint over which to fit linear
-                            regression. Defaults to 4. Please adjust this to the
-                            density of your timepoints and use higher values for
-                            more noisy data.
-      --lag-method {abs,rel}
-                            Method to use for determining lag. "abs" will measure
-                            time until the defined biomass threshold is crossed.
-                            "rel" will fist determine the inital biomass and
-                            measure the time until the biomass has passed this
-                            value times the threshold. Defaults to "rel".
-      --lag-threshold LAG_THRESHOLD
-                            Threshold to use for determining lag. With method
-                            "abs", this will measure time until the defined
-                            biomass threshold is crossed. With "rel" will fist
-                            determine the inital biomass and measure the time
-                            until the biomass has passed this value times the
-                            threshold. Defaults to 2.0, so with method "rel", this
-                            will measure the time taken for the first doubling.
-      --t0-fitrange T0_FITRANGE
-                            Specify the number of timepoint to use at the
-                            beginning of the growth curve to determine the initial
-                            biomass by averaging them. Defaults to 3.
-      --plots               Set this option (no argument required) to produce a
-                            plot of all growthcurves as pdf.
-      --plot-ylim PLOT_YLIM
-                            Specify the upper limit of the y-axis of growth curve
-                            plots. Useful if you want curves to be directly
-                            comparable. If not set, the axis of each curve is
-                            scaled to the data.
                             
 
 ### Pyphe-quantify
 
+```
+usage: pyphe-quantify [-h] --grid GRID [--pattern PATTERN] [--t T] [--d D]
+                      [--s S] [--negate NEGATE] [--reportAll]
+                      [--reportFileNames]
+                      [--hardImageThreshold HARDIMAGETHRESHOLD]
+                      [--hardSizeThreshold HARDSIZETHRESHOLD] [--qc QC]
+                      [--out OUT]
+                      {batch,timecourse,redness}
+
+positional arguments:
+  {batch,timecourse,redness}
+                        Pyphe-quantify can be run in three different modes. In
+                        batch mode, it quantifies colony sizes for all images
+                        mathcing the pattern individually. A separate results
+                        table and qc image is produced for each. Redness mode
+                        is similar except that the redness of each colony is
+                        quantified. In timecourse mode, all images matching
+                        the pattern are analysed jointly. The final image
+                        matching the pattern is used to create a mask of where
+                        the colonies are and this mask is then applied to all
+                        previous images in the timeseries. A single output
+                        table, where the timepoints are the rows and each
+                        individual colony is a row.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --grid GRID           This option is required (all others have defaults set)
+                        and specifies the grid in which the colonies are
+                        arranged. The argument has to be in the form of 6
+                        integer numbers separated by "-": <number of colony
+                        rows>-<number of colony columns>-<x-position of the
+                        top left colony>-<y-position of the top left
+                        colony>-<x-position of the bottom right
+                        colony>-<y-position of the bottom right colony>.
+                        Positions must be integers and are the distance in
+                        number of pixels from the image origin in each
+                        dimension (x is width dimension, y is height
+                        dimension). The image origin is, in line with scikit-
+                        image, in the top left corner.
+  --pattern PATTERN     Pattern describing files to analyse. This follows
+                        standard unix convention and can be used to specify
+                        subfolders in which to look for images
+                        (<subfolder>/*.jpg) or the image format (*.tiff,
+                        *.png, etc.). By default, all jpg images in the
+                        working directory are analysed.
+  --t T                 By default the intensity threshold to distinguish
+                        colonies from the background is determined by the Otsu
+                        method. The determined value will be multiplied by
+                        this argument to give the final threshold. Useful for
+                        easily fine-tuning colony detection.
+  --d D                 The distance between two grid positions will be
+                        divided by this number to compute the maximum distance
+                        a putative colony can be away from its reference grid
+                        position. Decreasing this number towards 2 makes
+                        colony-to-grid-matching more permissive (might help
+                        when some of your plates are at a slight angle or out
+                        of position).
+  --s S                 Detected putative colonies will be filtered by size
+                        and small components (usually image noise) will be
+                        excluded. The default threshold is the image
+                        area*0.00005 and is therefore independent of scanning
+                        resolution. This default is then multiplied by this
+                        argument to give the final threshold. Useful for when
+                        colonies have unusual sizes.
+  --negate NEGATE       In images acquired by transmission scanning, the
+                        colonies are darker than the background. Before
+                        thresholding, the image needs to be inverted/negated.
+                        Ignored in redness mode.
+  --reportAll           Sometimes, two putative colonies are identified that
+                        are within the distance threshold of a grid position.
+                        By default, only the closest colony is reported. This
+                        can be changed by setting this option (without
+                        parameter). This option allows pyphe quantify to be
+                        used even if colonies are not arrayed in a regular
+                        grid (you still need to provide a grid parameter
+                        though that spans the colonies you are interested i).
+  --reportFileNames     Only for timecourse mode, otherwise ignored. Use
+                        filenames as index for output table instead of
+                        timepoints. Useful when the ordering of timepoints is
+                        not the same as returned by the pattern.
+  --hardImageThreshold HARDIMAGETHRESHOLD
+                        Allows a hard (fixed) intensity threshold in the range
+                        [0,1] to be used instead of Otsu thresholding. But
+                        images intensities are re-scaled to [0,1] before
+                        thresholding.
+  --hardSizeThreshold HARDSIZETHRESHOLD
+                        Allows a hard (fixed) size threshold [number of
+                        pixels] to be used for filtering small colonies.
+  --qc QC               Directory to save qc images in. Defaults to
+                        "qc_images".
+  --out OUT             Directory to save output files in. Defaults to
+                        "pyphe_quant".
+```
 
 
 
 ### Pyphe-analyse
-Pyphe quantify is a tool for spatial normalisation and data aggregation across many plates. It implements a grid normalisation based on the concept proposed by [Zackrisson et al. 2016]((https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5015956/) and row/column median normalisation. Please see our paper and the protocol in it to find out more. Calling _pyphe-analyse_ from the command line will open the GUI.
+_Pyphe-analyse_ is a tool for spatial normalisation and data aggregation across many plates. It implements a grid normalisation based on the concept proposed by [Zackrisson et al. 2016]((https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5015956/) and row/column median normalisation. Please see our paper and the protocol in it to find out more. _Pyphe-analyse_ can be run from the command line, with options below, or using the graphical user interface by running _pyphe-analyse-gui_.
+
+
+```
+usage: pyphe-analyse.txt [-h] --edt EDT --format
+                         {gitter,pyphe-redness,pyphe-growthcurves} [--out OUT]
+                         [--load_layouts]
+                         [--gridnorm {standard384,standard1536}]
+                         [--extrapolate_corners] [--rcmedian] [--check CHECK]
+                         [--qc_plots QC_PLOTS]
+
+Welcome to pyphe-analyse, part of the pyphe toolbox. Written by
+stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-
+Lab/pyphe
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --edt EDT             Path to the Experimental Design Table (EDT) listing
+                        all plates of the experiment. The table must be in csv
+                        format, the first column must contain unique plate IDs
+                        and there must be a column named 'Data_path' that
+                        contains abolute or relative file paths to each
+                        plate's data file. A 'Layout_path' column can be
+                        included, see below. Any additional columns included
+                        in this file will bestored in each plate's meta-data
+                        and included in the final data output.
+  --format {gitter,pyphe-redness,pyphe-growthcurves}
+                        Type of inout data.
+  --out OUT             Specifies the path where to save the output data
+                        result. By default, the data report is saved in the
+                        working directory as "pyphe-analyse_data_report.csv"
+                        and will overwrite the file if it exists.
+  --load_layouts        Set this option (without parameters) to load layouts
+                        (requires Layout_path column in the EDT).
+  --gridnorm {standard384,standard1536}
+                        Perform reference grid normalisation. Standard384
+                        refers to plates which are in 384 (16x24) format with
+                        the reference grid in 96 format in the top left
+                        corner. Standard1536 refers to plates in 1536 format
+                        (32x48( with two 96 reference grids in the top left
+                        and bottom right corners.
+  --extrapolate_corners
+                        If working in standard1536 format, set this option to
+                        extrapolate the reference grid in the bottom left and
+                        top right corner. A linear regression will be trained
+                        across all top left and bottom right corners on plates
+                        in the experiment to predict hypothetical grid colony
+                        sizes in the other two corners.
+  --rcmedian            Perform row/column median normalisation. If --gridnorm
+                        will be performed first if both parameters are set.
+  --check CHECK         Check colony sizes after normalisation for negative
+                        and infinite colony sizes *(normalisation artefacts),
+                        throw a warning and set to NA.
+  --qc_plots QC_PLOTS   Specify a folder in which to save qc plots for each
+                        plate.
+
+```
+
+If you prefer to use the GUI, just run 'pyphe-analyse-gui'. You will need PySimpleGUI installed, which you can do by running 'pip install pysimplegui' in the terminal. It is deliberately not included in the package dependencies so 'pip install pyphe' won't install it for you. 
 
 ![pyphe-analyse GUI](https://github.com/Bahler-Lab/pyphe/blob/master/icons/gui.png)
 
-| Option        | Explanation  |
-| ---------------- |---------------|
-|working directory| |
-|path to table| |
-|load layout|  |
-|perform grid normalisation| |
-|select grid position| |
-|extrapolate missing corners| |
-|perform row/column median normaisation| |
-|check data| |
-|make qc plots| |
-|output file| |
+
 
 ## Support and FAQs
 If you run into trouble, please check if your problem is discussed below. If not, feel free to send an email to stephan.kamrad@crick.ac.uk or raise an issue here on github. 

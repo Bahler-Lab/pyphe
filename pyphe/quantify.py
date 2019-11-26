@@ -12,7 +12,7 @@ from skimage.segmentation import clear_border
 from skimage.util import invert
 from skimage.measure import regionprops, label
 from skimage.color import label2rgb
-
+from skimage.draw import rectangle_perimeter
 
 def make_grid(gd):
     '''
@@ -123,27 +123,16 @@ def check_and_negate(orig_image, negate=True):
         
     return image
 
-def quantify_single_image(orig_image, grid, griddist, mode, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_single_image_size(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
     '''
-    Process a single image (phloxine or batch mode).
+    Process a single image to extract colony sizes.
     '''
     
     #Prepare image
-    #If in batch mode, check that image is greyscale and negate
-    if mode == 'batch':
-        image = check_and_negate(orig_image, negate=negate)
-    elif mode == 'redness':
-        image = prepare_redness_image(orig_image)
-    else:
-        raise ValueError('Unrecognised mode. Must be batch or redness.')
+    image = check_and_negate(orig_image, negate=negate)
         
     #Make mask
-    #Adjust threshold for redness images slightly, just what works in practise. t parameter is still applied as additional coefficient
-    local_thresholding = False
-    if mode == 'redness':
-        t = t*1.02
-        local_thresholding = True
-    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=local_thresholding)
+    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=False)
     
     #Measure regionprobs
     data = {r.label : {p : r[p] for p in ['label', 'area', 'centroid', 'mean_intensity', 'perimeter']} for r in regionprops(mask, intensity_image=image)}
@@ -162,11 +151,46 @@ def quantify_single_image(orig_image, grid, griddist, mode, t=1, d=3, s=1, negat
     data['circularity'] = (4 * math.pi * data['area']) / (data['perimeter']**2)
     
     #Make qc image
-    if mode == 'batch':
-        qc = label2rgb(mask, image=orig_image, bg_label=0)
-    else:
-        qc = orig_image
+    qc = label2rgb(mask, image=orig_image, bg_label=0)
     
+    return (data, qc)
+
+def quantify_single_image_redness(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+    '''
+    Process a single image (phloxine or batch mode).
+    '''
+    
+    #Prepare image
+    image = prepare_redness_image(orig_image)
+        
+    #Make mask
+    #Adjust threshold for redness images slightly, just what works in practise. t parameter is still applied as additional coefficient
+    mask = make_mask(image, t=1.02*t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=True)
+    
+    #Measure regionprobs
+    data = {r.label : {p : r[p] for p in ['label', 'area', 'centroid', 'mean_intensity', 'perimeter']} for r in regionprops(mask, intensity_image=image)}
+    data = pd.DataFrame(data).transpose()
+    
+    blob_to_pos = match_to_grid(data['label'], data['centroid'], grid, griddist, d=d, reportAll=reportAll)
+    
+    #Select only those blobs which have a corresponding grid position
+    data = data.loc[[l in blob_to_pos for l in data['label']]]
+    
+    #Add grid position information to table
+    data['row'] = data['label'].map(lambda x: blob_to_pos[x].split('-')[0])
+    data['column'] = data['label'].map(lambda x: blob_to_pos[x].split('-')[1])
+    
+    #Add circularity
+    data['circularity'] = (4 * math.pi * data['area']) / (data['perimeter']**2)
+    
+    #Make qc image, add bounding boxes to blobs with grid assigned
+    qc = np.copy(orig_image)
+    for region in regionprops(mask):
+        if region.label in data['label']: 
+            minr, minc, maxr, maxc = region.bbox
+            bboxrows, bboxcols = rectangle_perimeter([minr, minc], end=[maxr, maxc], shape=image.shape, clip=True)
+            qc[bboxrows, bboxcols,:] = np.array((255,255,255))
+
     return (data, qc)
     
 def quantify_batch(images, grid, griddist, mode, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=None, hardImageThreshold=None, hardSizeThreshold=None):
@@ -176,7 +200,12 @@ def quantify_batch(images, grid, griddist, mode, qc='qc_images', out='pyphe_quan
 
     for fname, im in zip(images.files, images):
         
-        data, qc_image = quantify_single_image(np.copy(im), grid, griddist, mode, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+        if mode == 'batch':
+            data, qc_image = quantify_single_image_size(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+        elif mode == 'redness':
+            data, qc_image = quantify_single_image_redness(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+        else:
+            raise ValueError('Mode must be batch or redness.')
         
         image_name = os.path.basename(fname)
         if not reportAll:
@@ -291,5 +320,5 @@ def prepare_redness_image(orig_image):
     image = 1 - image
     
     return image
-    
+  
 

@@ -119,12 +119,12 @@ class Plate():
         circularity.columns = circularity.columns.map(str)
         self.pos_data['Colony_circularity'] = circularity
         
-    def read_maya_single_image(self):
+    def read_pypheredness_single_image(self):
         '''Read MeanIntensity column from Maya output file'''
         
         dat = pd.read_csv(self.meta_data['Data_path'])
 
-        size = dat.pivot(index='Row', columns='Column', values='MeanIntensity')
+        size = dat.pivot(index='row', columns='column', values='mean_intensity')
         size.index.name = None
         size.index = size.index.map(str)
         size.columns.name=None
@@ -462,31 +462,31 @@ def pyphe_cmd(wdirectory=None, grid_norm=None, out_ld=None, qcplots=None, check_
     check_exp_data(exp_data, layouts=load_layouts)
     print('Table checks completed')
     
-    exp = pp.Experiment(exp_data)
+    exp = Experiment(exp_data)
     print('Created pyphe experiment object')
     
     #Load the data
     if input_type == 'gitter':
-        exp.plates.map(pp.Plate.read_gitter_single_image)
+        exp.plates.map(Plate.read_gitter_single_image)
 
-    elif input_type == 'maya':
-        exp.plates.map(pp.Plate.read_maya_single_image)
+    elif input_type == 'pyphe-quantify-redness':
+        exp.plates.map(Plate.read_pypheredness_single_image)
         
     elif input_type == 'pyphe-growthcurves':
-        exp.plates.map(pp.Plate.read_pgc_single_image)
+        exp.plates.map(Plate.read_pgc_single_image)
 
     print('Plate data loaded sucessfully')
     
     
     #Load the layouts
     if load_layouts:
-        exp.plates.map(pp.Plate.read_layout_single_plate)
+        exp.plates.map(Plate.read_layout_single_plate)
         print('Layouts loaded sucessfully')
     
     #Perform norms
     if grid_norm:
-        if input_type == 'maya':
-            raise ValueError('Grid normalisation does not make sense for maya input')
+        if input_type == 'pyphe-quantify-redness':
+            raise ValueError('Grid normalisation does not make sense for redness input')
             
         print('Performing grid norm')
 

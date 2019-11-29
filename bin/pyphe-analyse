@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-from pyphe.analysis import pyphe_cmd
+from pyphe.analysis import pyphe_cmd, check_mkdir
 
 if __name__ == '__main__':
     ###Set up parsing of command line arguments with argparse###
@@ -27,11 +27,11 @@ if __name__ == '__main__':
 
     #Create qc directory
     if args.qc_plots:
-        check_mkdir(args.pc_plots)
+        check_mkdir(args.qc_plots)
 
     #Run analysis
     print('Analysis is starting, with following parameters:')
-    for k, v in args.items():
+    for k, v in vars(args).items():
         print('%s: %s'%(k, str(v)))
 
     gridQ = True if args.gridnorm else False

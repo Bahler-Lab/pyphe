@@ -120,7 +120,7 @@ class Plate():
         self.pos_data['Colony_circularity'] = circularity
         
     def read_pypheredness_single_image(self):
-        '''Read MeanIntensity column from Maya output file'''
+        '''Read  column from pyphe-quantify redness output file'''
         
         dat = pd.read_csv(self.meta_data['Data_path'])
 
@@ -470,7 +470,9 @@ def pyphe_cmd(wdirectory=None, grid_norm=None, out_ld=None, qcplots=None, check_
         
     elif input_type == 'pyphe-growthcurves':
         exp.plates.map(Plate.read_pgc_single_image)
-
+    
+    else:
+        raise ValueError('Unrecignised input_type')
     print('Plate data loaded sucessfully')
     
     

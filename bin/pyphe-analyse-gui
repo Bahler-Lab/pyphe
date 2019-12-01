@@ -9,7 +9,7 @@ window_rows = [
             [sg.Text('Step 1: Load the Experiment setup')],
             [sg.Text('Set the working directory (leave empty for current directory)'), sg.Input(key='wdirectory'), sg.FolderBrowse()],
             [sg.Text('Path to table (csv): '), sg.Input(key='exp_data_path'), sg.FileBrowse()],
-            [sg.Text('Select the input data type: '), sg.InputCombo(['gitter', 'maya', 'pyphe-growthcurves'], key='input_type')],
+            [sg.Text('Select the input data type: '), sg.InputCombo(['gitter', 'pyphe-quantify-redness', 'pyphe-growthcurves'], key='input_type')],
             [sg.Checkbox('Load layouts from file (one file per plate layout)', key='load_layouts')],
             [sg.Text('Step 2: Parameters for normalisation')],
             [sg.Checkbox('Perform grid normalisation', key='grid_norm')],

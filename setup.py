@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='pyphe',
-      version='0.91.20191126',
+      version='0.91.20191202',
       description='Python toolbox for phenotype analysis of arrayed microbial colonies',
       url='https://github.com/Bahler-Lab/pyphe',
       author='Stephan Kamrad',
@@ -16,5 +16,6 @@ setup(name='pyphe',
           'seaborn',
           'scipy',
           'scikit-image',
+          'scikit-learn'
       ],
       zip_safe=False)

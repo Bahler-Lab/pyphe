@@ -488,12 +488,15 @@ def pyphe_cmd(wdirectory=None, grid_norm=None, out_ld=None, qcplots=None, check_
             
         print('Performing grid norm')
 
-        if grid_pos == 'Standard 384 (top left)':
+        if (grid_pos == 'Standard 384 (top left)') or (grid_pos == 'standard384'):
             gridpos_list = [(row, col) for row in range(1, 16, 2) for col in range(1, 24, 2)]
-        if grid_pos == 'Standard 1536 (top left and bottom right)':
+        elif (grid_pos == 'Standard 1536 (top left and bottom right)') or (grid_pos == 'standard1536'):
             gridpos_list = [(row, col) for row in range(1, 32, 4) for col in range(1, 48, 4)]
             gridpos_list += [(row, col) for row in range(4, 33, 4) for col in range(4, 49, 4)]
-    
+        else:
+            raise ValueError('grid_pos must be one of ["Standard 384 (top left)", "standard384", "Standard 1536 (top left and bottom right)", "standard1536"]')
+
+
         if extrapolate_corners:
             from sklearn.linear_model import LinearRegression
             #Make a table of  features

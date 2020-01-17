@@ -1,5 +1,5 @@
 import pandas as pd
-from scipy.stats import ttest.ind
+from scipy.stats import ttest_ind
 import numpy as np
 from statsmodels.stats.multitest import multipletests as multit
 
@@ -15,26 +15,49 @@ def count_reps(inseries):
     from scipy import special
     
 
-def interpret(ldpath, condition_column, strain_column, values_column, control_condition, ttest, ld_encoding='utf-8', out_prefix):
+def interpret(ldpath, condition_column, strain_column, values_column, control_condition, out_prefix, ld_encoding='utf-8'):
     '''
     Interpret experimental data report produced by pyphe-analyse. 
     '''
     
     ###Import experimental report
     ld = pd.read_csv(ldpath, index_col=0, encoding=ld_encoding)
+
+    ###Check if essential columns exist
+    print('Checking input table')
+    print('Checking if condition_column exists')
+    if condition_column not in list(ld):
+        raise NameError('condition_column not found in table.')
+    print('....OK')
+
+    print('Checking if strain_column exists')
+    if strain_column not in list(ld):
+        raise NameError('strain_column not found in table.')
+    print('....OK')
+
+    print('Checking if values_column exists')
+    if values_column not in list(ld):
+        raise NameError('values_column not found in table.')
+    print('....OK')
+
+    print('Checking if control_condition exists in condition_column')
+    if control_condition not in ld[condition_column]:
+        raise NameError('condition_column not found in condition_column.')
+    print('....OK')
+
     
     ###Report some simple numbers
     print('Data report loaded successfully')
     
     conditions = ld[condition_column].unique()
-    print('Number of conditions: %i' len(conditions))
+    print('Number of conditions: %i'%len(conditions))
     
     strains = ld[strain_column].unique()
-    print('Number of strains: %i' len(strains))
+    print('Number of strains: %i'%len(strains))
     
-    print('Number of plates: %i'len(ld['Plate'].unique()))
+    print('Number of plates: %i'%len(ld['Plate'].unique()))
 
-    print('Number of non-NA data points: %i'len(ld.loc[ld[~values_column].insull()].index))
+    print('Number of non-NA data points: %i'%len(ld.loc[ld[~values_column].insull()].index))
     
     ###Group by replicates
     ld_stats = ld.copy()
@@ -58,7 +81,7 @@ def interpret(ldpath, condition_column, strain_column, values_column, control_co
     
     #Compute effect sizes
     median_effect_size = median_fitness.div(median_fitness[control_condition], axis=0)
-    mean_effect_size = mean_fitness[v].div(mean_fitness[control_condition], axis=0))
+    mean_effect_size = mean_fitness[v].div(mean_fitness[control_condition], axis=0)
    
     ###run Welch's t-test
     print('Running t-tests')

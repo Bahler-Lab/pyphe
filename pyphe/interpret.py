@@ -1,39 +1,8 @@
 import pandas as pd
 from scipy.stats import ttest.ind
+import numpy as np
+from statsmodels.stats.multitest import multipletests as multit
 
-def interpret(ldpath, condition_column, strain_column, values_column, control_condition, ttest, save_replicates):
-    '''
-    Interpret experimental data report produced by pyphe-analyse. 
-    '''
-    
-    #Import experimental report
-    ld = pd.read_csv(ldpath, index_col=0)
-    
-    #Compute summary stats
-    means = 
-    medians = 
-    stdev = 
-    n = 
-    
-    #Compute effect sizes
-    es = means/means[control_condition]
-    
-    #aggregate replicates
-    ld['condition_strain'] = ld[condition_column] + '_' + ld[strain_column]
-    ld['rep'] = count_reps(ld['condition_strain'])
-    ld_piv = ld.pivot_table(index=strain_column, columns=[condition_column,'rep'], values='size_corr')
-    
-    if save_replicates:
-        ld_piv.to_csv(save_replicates)
-        
-    #run ttest
-    
-    
-    #aggregate data in table
-    
-    
-    
-    
 def count_reps(inseries):
     inseries = inseries.tolist()
     counts = {k:0 for k in list(set(inseries))}
@@ -45,31 +14,84 @@ def count_reps(inseries):
     
     from scipy import special
     
+
+def interpret(ldpath, condition_column, strain_column, values_column, control_condition, ttest, ld_encoding='utf-8', out_prefix):
+    '''
+    Interpret experimental data report produced by pyphe-analyse. 
+    '''
     
-def custom_nan_welch_reg(a, b, mva, mvb, axis=0):
+    ###Import experimental report
+    ld = pd.read_csv(ldpath, index_col=0, encoding=ld_encoding)
     
-    (a, b) = (np.ma.masked_invalid(a), np.ma.masked_invalid(b))
+    ###Report some simple numbers
+    print('Data report loaded successfully')
+    
+    conditions = ld[condition_column].unique()
+    print('Number of conditions: %i' len(conditions))
+    
+    strains = ld[strain_column].unique()
+    print('Number of strains: %i' len(strains))
+    
+    print('Number of plates: %i'len(ld['Plate'].unique()))
 
-    if a.size == 0 or b.size == 0:
-        return (np.nan, np.nan)
+    print('Number of non-NA data points: %i'len(ld.loc[ld[~values_column].insull()].index))
+    
+    ###Group by replicates
+    ld_stats = ld.copy()
+    ld_stats['condition---strain'] = ld_stats[condition_column] + '---' + ld_stats[strain_column]
+    ld_stats['rep'] = count_reps(ld_stats['condition---strain'])
+    
+    #Pivot this into wide format
+    ld_stats_piv = ld_stats.pivot_table(index=strain_column, columns=[condition_column,'rep'], values=values_column)
 
-    (x1, x2) = (a.mean(axis), b.mean(axis))
-    (v1, v2) = (a.var(axis=axis, ddof=1), b.var(axis=axis, ddof=1))
-    (v1, v2) = (np.maximum(v1,mva), np.maximum(v2, mvb))
-    (n1, n2) = (a.count(axis), b.count(axis))
+    #assert that there are no duplicates, i.e. that count_reps() worked as expected
+    assert (ld_stats.pivot_table(index=strain_column, columns=[condition_column,'rep'], values=values_column, aggfunc=len).unstack().dropna()==1.0).all()
+    
+    #Save this table:
+    ld_stats.to_csv(out_prefix+'_reps.csv')
+    
+    ###Compute summary stats
+    mean_fitness = ld_stats_piv.mean(axis=1, level=1)
+    median_fitness = ld_stats_piv.median(axis=1, level=1)
+    fitness_stdev = ld_stats_piv.std(axis=1, level=1)
+    obs_count = ld_stats_piv.count(axis=1, level=1)
+    
+    #Compute effect sizes
+    median_effect_size = median_fitness.div(median_fitness[control_condition], axis=0)
+    mean_effect_size = mean_fitness[v].div(mean_fitness[control_condition], axis=0))
+   
+    ###run Welch's t-test
+    print('Running t-tests')
+    p_Welch = {}
+    for co in conditions:
+        pvals_temp = ttest_ind(ld_stats_piv.xs(co, axis=1, level=1).values, ld_stats_piv.xs(ctr_cond, axis=1, level=1).values, axis=1, nan_policy='omit', equal_var=False)[1].filled(np.nan)
+        p_Welch[co] = pd.Series(pvals_temp, index=ld_stats_piv.index)
+    p_Welch = pd.concat(p_Welch, axis=1)
 
-    vn1 = v1/n1
-    vn2 = v2/n2
-    with np.errstate(divide='ignore', invalid='ignore'):
-        df = (vn1 + vn2)**2 / (vn1**2 / (n1 - 1) + vn2**2 / (n2 - 1))
+    #multiple testing correction by BH
+    p_Welch_BH = p_Welch.copy()
+    for c in p_Welch_BH:
+        p_Welch_BH.loc[~p_Welch_BH[c].isnull(), c] = multit(p_Welch_BH.loc[~p_Welch_BH[c].isnull(), c], method='fdr_bh')[1]
 
-    # If df is undefined, variances are zero.
-    # It doesn't matter what df is as long as it is not NaN.
-    df = np.where(np.isnan(df), 1, df)
-    denom = np.ma.sqrt(vn1 + vn2)
 
-    with np.errstate(divide='ignore', invalid='ignore'):
-        t = (x1-x2) / denom
-    probs = special.betainc(0.5*df, 0.5, df/(df + t*t)).reshape(t.shape)
+    #aggregate data in table and save
+    #And join together in one big data frame
+    combined_data = pd.concat({'mean_fitness' : mean_fitness,
+                               'mean_fitness_log2' : mean_fitness.applymap(np.log2),
+                'median_fitness' : median_fitness,
+                  'median_fitness_log2' : median_fitness.applymap(np.log2),
+                'mean_effect_size' : mean_effect_size,
+                'mean_effect_size_log2' : mean_effect_size.applymap(np.log2),
+                'median_effect_size' : median_effect_size,
+                'median_effect_size_log2' : median_effect_size.applymap(np.log2),
+                'observation_count' : obs_count,
+               'stdev_fitness' : fitness_stdev,
+               'p_Welch' : p_Welch,
+                'p_Welch_BH' : p_Welch_BH,
+                'p_Welch_BH_-log10' : -p_Welch_BH.applymap(np.log10)}, axis=1)
 
-    return (t, probs.squeeze())
+
+    combined_data = combined_data.swaplevel(axis=1).sort_index(axis=1)
+    combined_data.to_csv(out_prefix+'_summaryStats.csv')
+        
+

@@ -8,7 +8,7 @@ if __name__ == '__main__':
   
    
     parser.add_argument('--ld', type=str, required=True, help="Path to the Data Report Table produced by pyphe-analyse.")
-    parser.add_argument('--out', type=str, required=True, default='pyphe-quantify-report', help='Specifies the path where to save the output data result. By default, a table with all replicates will be saved as pyphe-quantify-report_reps.csv and the statistic table will be saved as pyphe-quantify-report_summaryStats.csv in the current working directory. Existing files will be overwritten.')
+    parser.add_argument('--out', type=str, default='pyphe-quantify-report', help='Specifies the path where to save the output data result. By default, a table with all replicates will be saved as pyphe-quantify-report_reps.csv and the statistic table will be saved as pyphe-quantify-report_summaryStats.csv in the current working directory. Existing files will be overwritten.')
     parser.add_argument('--condition_column', type=str, required=True, help='Name of the condition column in the data report. Data will be grouped by the strain_column and differences between all unique conditions in the condition_column and the control_condition will be tested for.')
     parser.add_argument('--strain_column', type=str, required=True, help='Name of the strain column in the data report. Data will be grouped by the strain_column and differences between all unique conditions in the condition_column and the control_condition will be tested for.')
     parser.add_argument('--values_column', type=str, default='Colony_size_corr_checked', help='Name of the column in the data report to use as fitness values. Defaults to "Colony_size_corr_checked".')
@@ -22,4 +22,7 @@ if __name__ == '__main__':
     for k, v in vars(args).items():
         print('%s: %s'%(k, str(v)))
 
-    interpret(args.ld, args.condition_column, args.strain_column, args.values_column, args.control_condition, args.out, ld_encoding=args.ld_encoding)
+    #Load ld
+    ld = pd.read_csv(args.ld, index_col=0, ld_encoding=args.ld_encoding)
+
+    interpret(ld, args.condition_column, args.strain_column, args.values_column, args.control_condition, args.out)

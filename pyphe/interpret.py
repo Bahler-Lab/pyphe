@@ -12,17 +12,14 @@ def count_reps(inseries):
         counts[ite] += 1
     return out
     
-    from scipy import special
-    
 
-def interpret(ldpath, condition_column, strain_column, values_column, control_condition, out_prefix, ld_encoding='utf-8'):
+from scipy.stats import mstats_basic
+
+def interpret(ld, condition_column, strain_column, values_column, control_condition, out_prefix):
     '''
     Interpret experimental data report produced by pyphe-analyse. 
     '''
     
-    ###Import experimental report
-    ld = pd.read_csv(ldpath, index_col=0, encoding=ld_encoding)
-
     ###Check if essential columns exist
     print('Checking input table')
     print('Checking if condition_column exists')
@@ -41,8 +38,8 @@ def interpret(ldpath, condition_column, strain_column, values_column, control_co
     print('....OK')
 
     print('Checking if control_condition exists in condition_column')
-    if control_condition not in ld[condition_column]:
-        raise NameError('condition_column not found in condition_column.')
+    if control_condition not in ld[condition_column].unique():
+        raise NameError('control_condition not found in condition_column.')
     print('....OK')
 
     
@@ -57,7 +54,7 @@ def interpret(ldpath, condition_column, strain_column, values_column, control_co
     
     print('Number of plates: %i'%len(ld['Plate'].unique()))
 
-    print('Number of non-NA data points: %i'%len(ld.loc[ld[~values_column].insull()].index))
+    print('Number of non-NA data points: %i'%len(ld.loc[~pd.isnull(ld[values_column])].index))
     
     ###Group by replicates
     ld_stats = ld.copy()
@@ -71,26 +68,29 @@ def interpret(ldpath, condition_column, strain_column, values_column, control_co
     assert (ld_stats.pivot_table(index=strain_column, columns=[condition_column,'rep'], values=values_column, aggfunc=len).unstack().dropna()==1.0).all()
     
     #Save this table:
-    ld_stats.to_csv(out_prefix+'_reps.csv')
-    
+    ld_stats_piv.to_csv(out_prefix+'_reps.csv')
     ###Compute summary stats
-    mean_fitness = ld_stats_piv.mean(axis=1, level=1)
-    median_fitness = ld_stats_piv.median(axis=1, level=1)
-    fitness_stdev = ld_stats_piv.std(axis=1, level=1)
-    obs_count = ld_stats_piv.count(axis=1, level=1)
+    mean_fitness = ld_stats_piv.mean(axis=1, level=0)
+    median_fitness = ld_stats_piv.median(axis=1, level=0)
+    fitness_stdev = ld_stats_piv.std(axis=1, level=0)
+    obs_count = ld_stats_piv.count(axis=1, level=0)
     
     #Compute effect sizes
     median_effect_size = median_fitness.div(median_fitness[control_condition], axis=0)
-    mean_effect_size = mean_fitness[v].div(mean_fitness[control_condition], axis=0)
+    mean_effect_size = mean_fitness.div(mean_fitness[control_condition], axis=0)
    
     ###run Welch's t-test
     print('Running t-tests')
     p_Welch = {}
+    b = ld_stats_piv.xs(control_condition,axis=1, level=0).values
+    b = np.ma.masked_invalid(b)
+
     for co in conditions:
-        pvals_temp = ttest_ind(ld_stats_piv.xs(co, axis=1, level=1).values, ld_stats_piv.xs(ctr_cond, axis=1, level=1).values, axis=1, nan_policy='omit', equal_var=False)[1].filled(np.nan)
+        a = ld_stats_piv.xs(co, axis=1, level=0).values
+        a = np.ma.masked_invalid(a)
+        pvals_temp = mstats_basic.ttest_ind(a, b, axis=1, equal_var=False)[1].filled(np.nan)
         p_Welch[co] = pd.Series(pvals_temp, index=ld_stats_piv.index)
     p_Welch = pd.concat(p_Welch, axis=1)
-
     #multiple testing correction by BH
     p_Welch_BH = p_Welch.copy()
     for c in p_Welch_BH:
@@ -116,5 +116,6 @@ def interpret(ldpath, condition_column, strain_column, values_column, control_co
 
     combined_data = combined_data.swaplevel(axis=1).sort_index(axis=1)
     combined_data.to_csv(out_prefix+'_summaryStats.csv')
+    print('Interpretation completed and results saved.')
+    return combined_data
         
-

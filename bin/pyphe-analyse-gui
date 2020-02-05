@@ -5,7 +5,6 @@ from pyphe.analysis import pyphe_cmd
 
 #Read in all parameters
 window_rows = [
-            [sg.Image('../icons/toolbox-72dpi_tp.png')],
             [sg.Text('Step 1: Load the Experiment setup')],
             [sg.Text('Set the working directory (leave empty for current directory)'), sg.Input(key='wdirectory'), sg.FolderBrowse()],
             [sg.Text('Path to table (csv): '), sg.Input(key='exp_data_path'), sg.FileBrowse()],

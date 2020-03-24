@@ -234,8 +234,12 @@ def quantify_single_image_fromTimecourse(orig_image, mask, negate=True, calibrat
     Apply a previously determined mask to an image from a timeseries.
     '''
     
-    #Check and negate  image
-    image = check_and_negate(orig_image, negate=negate)
+    #Prepare image. Don't do any scaling. The scaling depends on the maximum and minimum pixel intensity which is not very stable.
+    #Negate images if required
+    if negate:
+        image = invert(orig_image)
+    else:
+        image = orig_image
 
     #Get background intensity
     bgmask = (mask==0).astype(int)
@@ -258,8 +262,11 @@ def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant
     '''
     Analyse a timeseries of images. Make the mask based on the last image and extract intensity information from all previous images based on that.
     '''
-    #Check and negate final image
-    fimage = check_and_negate(images[-1], negate=negate)
+    #Get final image
+    if negate:
+        fimage = invert(images[-1])   
+    else: 
+        fimage = images[-1]
     
     #Make mask
     mask = make_mask(fimage, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)

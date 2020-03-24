@@ -28,4 +28,4 @@ if __name__ == '__main__':
            
     scanner = scan.find_scanner(args.scanner)
     
-    scan.scan_batch(args.nscans, args.interval, args.prefix, args.postfix, args.fixture, args.resolution, geometries, scanner, args.mode)
+    scan.scan_timecourse(args.nscans, args.interval, args.prefix, args.postfix, args.fixture, args.resolution, geometries, scanner, args.mode)

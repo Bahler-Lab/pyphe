@@ -269,7 +269,7 @@ def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant
         fimage = images[-1]
     
     #Make mask
-    mask = make_mask(fimage, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+    mask = make_mask(fimage, t=t, s=s, hardSizeThreshold=hardSizeThreshold)
     
     #Make table of intensities over time
     data = {fname : quantify_single_image_fromTimecourse(orig_image, mask, negate=negate, calibrate=calibrate) for fname,orig_image in zip(images.files, images)}

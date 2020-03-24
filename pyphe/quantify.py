@@ -229,7 +229,7 @@ def quantify_batch(images, grid, griddist, mode, qc='qc_images', out='pyphe_quan
         plt.clf()
         plt.close()
 
-def quantify_single_image_fromTimecourse(orig_image, mask, negate=True):
+def quantify_single_image_fromTimecourse(orig_image, mask, negate=True, calibrate='x'):
     '''
     Apply a previously determined mask to an image from a timeseries.
     '''
@@ -245,13 +245,16 @@ def quantify_single_image_fromTimecourse(orig_image, mask, negate=True):
     image = image - bgmean
     image[image<0] = 0
 
+    #transform with calibration function
+    image_trafo = eval(calibrate.replace('x', 'image'))
+    
     #Get intensity data for each blob
-    data = {r.label : r['mean_intensity'] for r in regionprops(mask, intensity_image=image)}
+    data = {r.label : r['mean_intensity']*r['area'] for r in regionprops(mask, intensity_image=image_trafo)}
 
     return data
 
         
-def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x'):
     '''
     Analyse a timeseries of images. Make the mask based on the last image and extract intensity information from all previous images based on that.
     '''
@@ -262,7 +265,7 @@ def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant
     mask = make_mask(fimage, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
     
     #Make table of intensities over time
-    data = {fname : quantify_single_image_fromTimecourse(orig_image, mask, negate=negate) for fname,orig_image in zip(images.files, images)}
+    data = {fname : quantify_single_image_fromTimecourse(orig_image, mask, negate=negate, calibrate=calibrate) for fname,orig_image in zip(images.files, images)}
     data = pd.DataFrame(data).transpose()
     
     #Get centroids and match to positions

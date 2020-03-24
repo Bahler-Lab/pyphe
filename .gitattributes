@@ -1,0 +1,2 @@
+#Stop git from changing line endings of executables to Windows-style. They still work under Windows.
+bin/* text eol=lf

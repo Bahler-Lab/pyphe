@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     
     
 setup(name='pyphe',
-      version='0.92.20200115',
+      version='0.93.20200323',
       description='Python toolbox for phenotype analysis of arrayed microbial colonies',
       long_description=long_description,
       long_description_content_type="text/markdown",

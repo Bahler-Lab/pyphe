@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
-def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold, plots, plot_ylim):
+def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold, plots, plot_ylim, outdir):
     '''
     Function for analysing a csv containing growthcurves.
     
@@ -80,7 +80,7 @@ def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold,
         plt.rcParams['svg.fonttype'] = 'none'
         from matplotlib.backends.backend_pdf import PdfPages
         
-        with PdfPages('.'.join(args.input.split('.')[:-1]) + '_curves.pdf') as pdf:
+        with PdfPages(outdir + '/' + .'.join(args.input.split('.')[:-1]) + '_curves.pdf') as pdf:
             layout=(8,4)
             raw_kwargs={'color':'C0', 'linewidth':1}
             smoothed_kwargs={'color':'r', 'linewidth':0.5}

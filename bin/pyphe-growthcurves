@@ -3,6 +3,7 @@
 import argparse
 import pandas as pd
 from pyphe import growthcurves
+from pyphe.analysis import check_mkdir
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Welcome to pyphe-growthcurves, part of the pyphe toolbox. Written by stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-Lab/pyphe.')
@@ -15,7 +16,8 @@ if __name__ == '__main__':
     parser.add_argument('--t0-fitrange', type=int, default=3, help='Specify the number of timepoint to use at the beginning of the growth curve to determine the initial biomass by averaging them. Defaults to 3.')
     parser.add_argument('--plots', default=False, action='store_true', help='Set this option (no argument required) to produce a plot of all growthcurves as pdf.')
     parser.add_argument('--plot-ylim', type=float, help='Specify the upper limit of the y-axis of growth curve plots. Useful if you want curves to be directly comparable. If not set, the axis of each curve is scaled to the data.')
-
+    parser.add_argument('--out', type=str, default='.', help='Folder to save result files in. Result files have the same name as the input file with _results.csv appended.')
+    
     args = parser.parse_args()
     
     #Import the data and perform some basic checks
@@ -26,8 +28,11 @@ if __name__ == '__main__':
         print('The first column must contain the timepoint and these must only have numeric values (no units or other string).')
     assert all(gdata.index[i] <= gdata.index[i+1] for i in range(len(gdata.index)-1)), 'Timepoints must be in ascending order.'
     
-    result = growthcurves.analyse_growthcurve(gdata, args.fitrange, args.t0_fitrange, args.lag_method, args.lag_threshold, args.plots, args.plot_ylim)
-    result.to_csv('.'.join(args.input.split('.')[:-1]) + '_results.csv')
+    outdir = args.out.strip('/').strip{'\\')
+    check_mkdir(outdir)
+    result = growthcurves.analyse_growthcurve(gdata, args.fitrange, args.t0_fitrange, args.lag_method, args.lag_threshold, args.plots, args.plot_ylim, outdir)
+      
+    result.to_csv(outdir + '/' + .'.join(args.input.split('.')[:-1]) + '_results.csv')
     
     print('Analysis done: %s'%args.input)
 

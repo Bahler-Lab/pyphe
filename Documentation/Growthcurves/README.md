@@ -1,6 +1,9 @@
 # pyphe-growthcurves
 Python module for non-parametric characterisation of microbial growth curves written by Stephan Kamrad (stephan.kamrad@crick.ac.uk) and part of the pyphe toolbox (maintained at https://github.com/Bahler-Lab/pyphe).
 
+Example data was created with the following command line call:
+> pyphe-growthcurves --input example_data.csv --plots
+
 ### Getting started
 Pyphe-growthcurves is written in Python and is compatible with Python 2 and 3. It should run on pretty much any machine (Windows/Linux/Mac) and only requires the commonly used packages argparse, numpy, scipy and pandas, and matplotlib if you are using the plotting option. If you do not have python installed check out https://www.anaconda.com/distribution/. To get started, and to use standard options, use the following command line call:
 

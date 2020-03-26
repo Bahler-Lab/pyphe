@@ -15,10 +15,10 @@ Please see our preprint for a detailed description of the algorithms and applica
 
 ## Overview
 A typical fitness screen with pyphe will involve:
-1. Image acquisition with _pyphe-scan_, or _pyphe-scan-timecourse_
-2. Quantification of colony properties from images using _pyphe-quantify_. In the case of growth curves, parameters are additionally extracted with _pyphe-growthcurves_.
-3. Normalisation and data aggregation using _pyphe-analyse_.
-
+1. Image acquisition with [_pyphe-scan_](#pyphe-scan), or [_pyphe-scan-timecourse_](#pyphe-scan-timecourse)
+2. Quantification of colony properties from images using [_pyphe-quantify_](#pyphe-quantify). In the case of growth curves, parameters are additionally extracted with [_pyphe-growthcurves_](#pyphe-growthcurves).
+3. Normalisation and data aggregation using [_pyphe-analyse_](#pyphe-analyse).
+4. Statistics and hit calling using [_pyphe-interpret_](#pyphe-interpret)
 Please see our paper for a detailed protocol and explanations of the algorithms.
 
 
@@ -44,7 +44,7 @@ This tools allows you to take consecutive scans of sets of plates, which are the
 
 4. With a laser cutter, make a fixture to hold your plates in place. We provide an svg file with the cutting shape in the Documentation directory. Use tape to hold your fixture into place, it should be pushed against the back of the scanner (where the cables are) with the top of the plates facing left. Pyphe-scan and pyphe-quantify come pre-configured for using the provided fixture on an Epson V800 scanner but it is easy to add your own fixture and cropping settings. If you want to use your own fixture, see below of how to add the geometry information to pyphe-scan. 
 
-#### Scan plates 
+#### Scanning plate batches
 
 1. Open the file manager and navigate to the folder in which you want to save your images. The script will create a sub-folder that begins with the current date to save all your images. 
 
@@ -86,6 +86,8 @@ All arguments except the fixture have default values and are optional. A folder 
 
 ### Pyphe-scan-timecourse
 
+This tool acquires image timeseries by scanning in fixed time intervals. For each position in the fixture, a folder is created. Image names contain number of scan. Other options for this tool are similar to [_pyphe-scan_](#pyphe-scan). More than one scanner can be connected and used at the same time. Scanner numbers are defined by the order in which they are connected to the computer. Proceed as follows: (1) disconnect all scanners, (2) prepare the first scanner with plates, connect it and turn it on. (3) start scanning with --scanner 1 option, (4) prepare the second scanner, connect it and turn it on, (5) start scanning with --scanner 2 option. Repeat step (4) and (5), each time incrementing the --scanner argument. 
+
 ```
 usage: pyphe-scan-timecourse [-h] [--nscans NSCANS] [--interval INTERVAL]
                              [--prefix PREFIX] [--postfix POSTFIX]
@@ -113,6 +115,7 @@ optional arguments:
   --mode {Gray,Color}   Which color mode to use for scanning. Defaults to
                         Gray.
 ```
+
 
 ### Pyphe-growthcurves
 This tool performs non-parametric analysis of growth curves. It was written specifically to analyse colony size timeseries data obtained with _pyphe-quantify_ _timeseries_.
@@ -181,6 +184,8 @@ Pyphe-growthcurves will produce a csv file with extracted growth parameters. The
                             
 
 ### Pyphe-quantify
+
+Pyphe quantify extracts colony parameters from images. In can operate in three distinct modes analysing colony sizes for each image individually (batch mode), analysing redness for each image individually (redness mode) or obtaining a growth curve from an image timeseries (timeseries mode). The --grid parameter is required define the position of colonies on the plate. You can either use one of our preconfigured positions if you are using the pp3 fixture or define your own (see the manual below).
 
 ```
 usage: pyphe-quantify [-h] --grid GRID [--pattern PATTERN] [--t T] [--d D]
@@ -279,7 +284,7 @@ optional arguments:
 
 
 ### Pyphe-analyse
-_Pyphe-analyse_ is a tool for spatial normalisation and data aggregation across many plates. It implements a grid normalisation based on the concept proposed by [Zackrisson et al. 2016]((https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5015956/) and row/column median normalisation. Please see our paper and the protocol in it to find out more. _Pyphe-analyse_ can be run from the command line, with options below, or using the graphical user interface by running _pyphe-analyse-gui_.
+_Pyphe-analyse_ is a tool for spatial normalisation and data aggregation across many plates. It implements a grid normalisation based on the concept proposed by [Zackrisson et al. 2016](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5015956/) and row/column median normalisation. Please see our paper and the protocol in it to find out more. _Pyphe-analyse_ can be run from the command line, with options below, or using the graphical user interface by running _pyphe-analyse-gui_.
 
 
 ```
@@ -341,7 +346,7 @@ If you prefer to use the GUI, just run 'pyphe-analyse-gui'. You will need PySimp
 
 ![pyphe-analyse GUI](https://github.com/Bahler-Lab/pyphe/blob/master/icons/gui.png)
 
-
+### Pyphe-interpret
 
 ## Support and FAQs
 If you run into trouble, please check if your problem is discussed below. If not, feel free to send an email to stephan.kamrad@crick.ac.uk or raise an issue here on github. 

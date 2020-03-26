@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--fixture', type=str, choices = list(geometries), help='ID of the fixture you are using.')
     parser.add_argument('--format', type=str, default='jpg', choices = ['jpg', 'tiff'], help='Format of the cropped and rotated images. Must be jpg (saves diskspace) or tiff (preserves all image data exactly).')
     parser.add_argument('--resolution', choices=[150,300,600,900,1200], type=int, default=600, help='Resolution for scanning in dpi. Default is 600.')
-    parser.add_argument('--scanner', choices=[1,2,3], type=int, default=1, help='Which scanner to use. Scanners are not uniquely identified and may switch when turned off/unplugged. This option does not need to be set when only one scanner is connected.')
+    parser.add_argument('--scanner', choices=[1,2,3], type=int, default=1, help='Which scanner to use. Scanners are not uniquely identified and may switch when turned off/unplugged. Scanner numbers are defined by the order in which they are connected to the computer. This option does not need to be set when only one scanner is connected.')
     parser.add_argument('--mode', choices=['Gray', 'Color'], type=str, default='Gray', help='Which color mode to use for scanning. Defaults to Gray.')
 
     args = parser.parse_args()

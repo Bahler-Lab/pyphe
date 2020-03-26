@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+
+import argparse
+from skimage.io.collection import ImageCollection
+from pyphe import quantify, analysis
+
+if __name__ == '__main__':
+    ###Set up parsing of command line arguments with argparse###
+    parser = argparse.ArgumentParser(description='Welcome to pyphe-quantify, part of the pyphe toolbox. Written by stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-Lab/pyphe')
+  
+    parser.add_argument('mode', type=str, choices=['batch', 'timecourse', 'redness'], help='Pyphe-quantify can be run in three different modes. In batch mode, it quantifies colony sizes for all images mathcing the pattern individually. A separate results table and qc image is produced for each. Redness mode is similar except that the redness of each colony is quantified. In timecourse mode, all images matching the pattern are analysed jointly. The final image matching the pattern is used to create a mask of where the colonies are and this mask is then applied to all previous images in the timeseries. A single output table, where the timepoints are the rows and each individual colony is a row. ')
+    
+    parser.add_argument('--grid', type=str, required=True, help='This option is required (all others have defaults set) and specifies the grid in which the colonies are arranged. The argument has to be in the form of 6 integer numbers separated by "-": <number of colony rows>-<number of colony columns>-<x-position of the top left colony>-<y-position of the top left colony>-<x-position of the bottom right colony>-<y-position of the bottom right colony>. Positions must be integers and are the distance in number of pixels from the image origin in each dimension (x is width dimension, y is height dimension). The image origin is, in line with scikit-image, in the top left corner.')
+    parser.add_argument('--pattern', type=str, default='*.jpg', help='Pattern describing files to analyse. This follows standard unix convention and can be used to specify subfolders in which to look for images (<subfolder>/*.jpg) or the image format (*.tiff, *.png, etc.). By default, all jpg images in the working directory are analysed.')
+    parser.add_argument('--t', type=float, default=1, help='By default the intensity threshold to distinguish colonies from the background is determined by the Otsu method. The determined value will be multiplied by this argument to give the final threshold. Useful for easily fine-tuning colony detection.')
+    parser.add_argument('--d', type=float, default=3, help='The distance between two grid positions will be divided by this number to compute the maximum distance a putative colony can be away from its reference grid position. Decreasing this number towards 2 makes colony-to-grid-matching more permissive (might help when some of your plates are at a slight angle or out of position).')
+    parser.add_argument('--s', type=float, default=1, help='Detected putative colonies will be filtered by size and small components (usually image noise) will be excluded. The default threshold is the image area*0.00005 and is therefore independent of scanning resolution. This default is then multiplied by this argument to give the final threshold. Useful for when colonies have unusual sizes.')
+    parser.add_argument('--negate', type=bool, default=True, help='In images acquired by transmission scanning, the colonies are darker than the background. Before thresholding, the image needs to be inverted/negated. Ignored in redness mode.')
+    parser.add_argument('--reportAll', default=False, action='store_true', help='Sometimes, two putative colonies are identified that are within the distance threshold of a grid position. By default, only the closest colony is reported. This can be changed by setting this option (without parameter). This option allows pyphe quantify to be used even if colonies are not arrayed in a regular grid (you still need to provide a grid parameter though that spans the colonies you are interested i). ')
+    parser.add_argument('--reportFileNames', default=False, action='store_true', help='Only for timecourse mode, otherwise ignored. Use filenames as index for output table instead of timepoints. Useful when the ordering of timepoints is not the same as returned by the pattern.')
+    parser.add_argument('--hardImageThreshold', type=float, help='Allows a hard (fixed) intensity threshold in the range [0,1] to be used instead of Otsu thresholding. But images intensities are re-scaled to [0,1] before thresholding.')
+    parser.add_argument('--hardSizeThreshold', type=int, help='Allows a hard (fixed) size threshold [number of pixels] to be used for filtering small colonies.')
+    parser.add_argument('--qc', type=str, default='qc_images', help='Directory to save qc images in. Defaults to "qc_images".')
+    parser.add_argument('--out', type=str, default='pyphe_quant', help='Directory to save output files in. Defaults to "pyphe_quant".')
+
+    args = parser.parse_args()
+    
+    #Check that coefficients are within bounds
+    if not args.t > 0:
+        raise ValueError('t must be > 0.')
+    if not args.d >= 2:
+        raise ValueError('d must be >= 2.')
+    if not args.s>0:
+        raise ValueError('s must be > 0.')
+    
+    ###Load images as collection###
+    images = ImageCollection(args.pattern, conserve_memory=True)
+    if not len(images) > 0:
+        raise ValueError('No images to analyse. By default all .jpg images in the current working directory will be analysed. The folder and file type can be changed using the --pattern option.')
+    print('Starting analysis of %i images in %s mode'%(len(images), args.mode))
+    
+    ###Make grid###
+    #Predefined grids
+    grid = args.grid
+    if grid == 'som3_96':
+        grid = '8-12-1-2-3-4'
+    if grid == 'som3_384':
+        grid = '16-24-30-38-1254-821'
+    if grid == 'som3_1536':
+        grid = '32-48-43-50-2545-1690'
+        
+    #If user defined grid, check if in the right format
+    if not len(grid.split('-'))==6:
+        raise ValueError('Grid definition not in correct format. Must be one of som3_96, som3_384, som3_1536 or a custom grid definition consisting of 6 integers separated by "-".')
+    grid = grid.split('-')
+    try:
+        grid = list(map(int, grid))
+    except Exception:
+        raise ValueError('Grid definition not in correct format. Must be one of som3_96, som3_384, som3_1536 or a custom grid definition consisting of 6 integers separated by "-".')
+    
+    #Create grid
+    grid, griddist = quantify.make_grid(grid)
+    
+    #Create output folders
+    analysis.check_mkdir(args.out)
+    analysis.check_mkdir(args.qc)
+
+    ###Start analysis###
+    arg_dict = dict(vars(args))
+    argstr = '\n    '.join(['%s: %s'%(k,str(v)) for k,v in arg_dict.items()])
+    print('Starting analysis with the following parameters:\n%s'%argstr)
+    arg_dict.pop('grid')
+    arg_dict.pop('mode')
+    arg_dict.pop('pattern')
+
+    if (args.mode == 'batch') or (args.mode == 'redness'):
+        quantify.quantify_batch(images, grid, griddist, args.mode, **arg_dict)        
+    if args.mode == 'timecourse':
+        quantify.quantify_timecourse(images, grid, griddist, **arg_dict)        
+       
+    print('Analysis complete.')
+
+

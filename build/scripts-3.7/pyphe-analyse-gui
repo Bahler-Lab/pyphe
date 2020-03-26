@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+import PySimpleGUI as sg
+from pyphe.analysis import pyphe_cmd
+
+#Read in all parameters
+window_rows = [
+            [sg.Image('../icons/toolbox-72dpi_tp.png')],
+            [sg.Text('Step 1: Load the Experiment setup')],
+            [sg.Text('Set the working directory (leave empty for current directory)'), sg.Input(key='wdirectory'), sg.FolderBrowse()],
+            [sg.Text('Path to table (csv): '), sg.Input(key='exp_data_path'), sg.FileBrowse()],
+            [sg.Text('Select the input data type: '), sg.InputCombo(['gitter', 'pyphe-quantify-redness', 'pyphe-growthcurves'], key='input_type')],
+            [sg.Checkbox('Load layouts from file (one file per plate layout)', key='load_layouts')],
+            [sg.Text('Step 2: Parameters for normalisation')],
+            [sg.Checkbox('Perform grid normalisation', key='grid_norm')],
+            [sg.Text('Select grid position'), sg.InputCombo(['Standard 384 (top left)', 'Standard 1536 (top left and bottom right)'], key='grid_pos')],
+            [sg.Checkbox('Extrapolate missing corners (1536 with standard grid only)', key='extrapolate_corners')],
+            [sg.Checkbox('Perform row/column median normalisation', key='rcmedian')],
+            [sg.Text('Step 3: Check data and make QC plots')],
+            [sg.Checkbox('Check data for negative and infinitive fitness and replace by NA', key='check_setNA')],
+            [sg.Checkbox('Make qc plots? If so, please specify directory.', key='qcplots'), sg.Input(key='qcplot_dir'), sg.FolderBrowse()],
+            [sg.Text('Step 4: Export data')],
+            [sg.Text('Specify output file: '), sg.Input(key='out_ld'), sg.FileSaveAs()],
+            [sg.Submit()],
+        ]
+
+window = sg.Window('Set up pyphe experiment', window_rows)  
+event, values = window.Read()
+window.Close()
+
+#Run pyphe
+args = {k:v for k,v in values.items() if k not in ['Save As...', 'Browse', 'Browse0', 'Browse1']}
+print('Analysis is starting, with following parameters:')
+for k, v in args.items():
+    print('%s: %s'%(k, str(v)))
+pyphe_cmd(**args)

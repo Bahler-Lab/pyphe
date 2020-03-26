@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import argparse
+from pyphe.analysis import pyphe_cmd, check_mkdir
+
+if __name__ == '__main__':
+    ###Set up parsing of command line arguments with argparse###
+    parser = argparse.ArgumentParser(description='Welcome to pyphe-analyse, part of the pyphe toolbox. Written by stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-Lab/pyphe')
+  
+   
+    parser.add_argument('--edt', type=str, required=True, help="Path to the Experimental Design Table (EDT) listing all plates of the experiment. The table must be in csv format, the first column must contain unique plate IDs and there must be a column named 'Data_path' that contains abolute or relative file paths to each plate's data file. A 'Layout_path' column can be included, see below. Any additional columns included in this file will bestored in each plate's meta-data and included in the final data output.")
+    parser.add_argument('--format', required=True, type=str, choices=['gitter', 'pyphe-quantify-redness', 'pyphe-growthcurves'], help='Type of inout data.')
+    parser.add_argument('--out', default='pyphe-analyse_data_report.csv', type=str, help='Specifies the path where to save the output data result. By default, the data report is saved in the working directory as "pyphe-analyse_data_report.csv" and will overwrite the file if it exists.')
+    parser.add_argument('--load_layouts', default=False, action='store_true', help='Set this option (without parameters) to load layouts (requires Layout_path column in the EDT).')
+    parser.add_argument('--gridnorm', type=str, choices=['standard384', 'standard1536'], help='Perform reference grid normalisation. Standard384 refers to plates which are in 384 (16x24) format with the reference grid in 96 format in the top left corner. Standard1536 refers to plates in 1536 format (32x48( with two 96 reference grids in the top left and bottom right corners.')
+    parser.add_argument('--extrapolate_corners', default=False, action='store_true', help='If working in standard1536 format, set this option to extrapolate the reference grid in the bottom left and top right corner. A linear regression will be trained across all top left and bottom right corners on plates in the experiment to predict hypothetical grid colony sizes in the other two corners.')
+    parser.add_argument('--rcmedian', default=False, action='store_true', help='Perform row/column median normalisation. If --gridnorm will be performed first if both parameters are set.')
+    parser.add_argument('--check', default=True, type=bool, help='Check colony sizes after normalisation for negative and infinite colony sizes *(normalisation artefacts), throw a warning and set to NA.')
+    parser.add_argument('--qc_plots', type=str, help='Specify a folder in which to save qc plots for each plate.')
+
+
+    args = parser.parse_args()
+
+    #Check arguments
+    if args.extrapolate_corners and (args.gridnorm != 'standard1536'):
+        raise ValueError('--extrapolate_corners can only be used if gridnorm is standard1536.')
+
+    #Create qc directory
+    if args.qc_plots:
+        check_mkdir(args.qc_plots)
+
+    #Run analysis
+    print('Analysis is starting, with following parameters:')
+    for k, v in vars(args).items():
+        print('%s: %s'%(k, str(v)))
+
+    gridQ = True if args.gridnorm else False
+    qcQ = True if args.qc_plots else False
+    pyphe_cmd(grid_norm=gridQ, out_ld=args.out, qcplots=qcQ, check_setNA=args.check, qcplot_dir=args.qc_plots, exp_data_path=args.edt, extrapolate_corners=args.extrapolate_corners, grid_pos=args.gridnorm, rcmedian=args.rcmedian, input_type=args.format, load_layouts=args.load_layouts)

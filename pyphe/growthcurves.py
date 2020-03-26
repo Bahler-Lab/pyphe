@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
-def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold, plots, plot_ylim, outdir):
+def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold, plots, plot_ylim, outdir, in_baseStr):
     '''
     Function for analysing a csv containing growthcurves.
     
@@ -47,7 +47,7 @@ def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold,
     #Analyse lags
     lags = gdata.apply(find_lag)
     
-    def find_max_slope(x):
+    def find_max_slope(x, find_min_instead=False):
         '''Find max_slope, t_max, intercept and r2 for a single growthcurve. The regression is aware of the timepoints so this will work with unevenly samples growthcurves.
         Required arguments:
         x (array-like) -- 1D array-like containing the population/colony sizes
@@ -67,20 +67,46 @@ def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold,
         for i in range(len(x)-fitrange):
             slope, intercept, r_value, p_value, std_err = stats.linregress(t[i:i+fitrange], x[i:i+fitrange])
             regression_results.append({'t_max':np.mean(t[i:i+fitrange]), 'max_slope':slope, 'r2':r_value**2, 'y-intercept':intercept})
-        slope_result = pd.Series(max(regression_results, key=lambda x: x['max_slope']))
+            
+        if find_min_instead:
+            slope_result = pd.Series(min(regression_results, key=lambda x: x['max_slope']))
+        else:
+            slope_result = pd.Series(max(regression_results, key=lambda x: x['max_slope']))
+            
         slope_result['x-intercept'] = -slope_result['y-intercept']/slope_result['max_slope']
         return slope_result
         
         
     slopes = gdata.apply(find_max_slope)
     
-    
+    ###Perform some simple QC
+    #flag cases where min slope is > 7.5% of max slope in entire input data
+    min_slopes = gdata.apply(find_max_slope, find_min_instead=True)
+    min_slopes = min_slopes.loc['max_slope']   
+    neg_slope_warning = min_slopes < -(slopes.loc['max_slope'].max() * 0.075)
+    neg_slope_warning.name = 'warning_negative_slope'
+    if neg_slope_warning.sum() > 0:
+        print('The following growth curves appear to have significant negative slopes. This is also flagged in the output file:  %s)'%','.join(neg_slope_warning[neg_slope_warning].index))
+    neg_slope_warning = pd.DataFrame(neg_slope_warning).transpose()
+    neg_slope_warning.loc['warning_negative_slope'] = neg_slope_warning.loc['warning_negative_slope'].map({True:'WARNING', False:''})
+
+    #flag cases where the tangent fit is poor (R^2<0.95)
+    r2_warning = slopes.loc['r2'] < 0.95
+    r2_warning.name = 'warning_bad_fit'
+    if r2_warning.sum() > 0:
+        print('For the following growth curves the R^2 of the fitted tangent is < 0.95. This is also flagged in the output file:  %s)'%','.join(r2_warning[r2_warning].index))
+    r2_warning = pd.DataFrame(r2_warning).transpose()
+    r2_warning.loc['warning_bad_fit'] = r2_warning.loc['warning_bad_fit'].map({True:'WARNING', False:''})
+
+    ###Plotting
     if plots:
         from matplotlib import pyplot as plt
+        import seaborn as sns
+        sns.set(style='ticks', font_scale=0.75)
         plt.rcParams['svg.fonttype'] = 'none'
         from matplotlib.backends.backend_pdf import PdfPages
         
-        with PdfPages(outdir + '/' + .'.join(args.input.split('.')[:-1]) + '_curves.pdf') as pdf:
+        with PdfPages(outdir + '/' + in_baseStr + '_curves.pdf') as pdf:
             layout=(8,4)
             raw_kwargs={'color':'C0', 'linewidth':1}
             smoothed_kwargs={'color':'r', 'linewidth':0.5}
@@ -127,4 +153,4 @@ def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold,
                 plt.close()
                 plt.clf()
 
-    return pd.concat([lags, slopes], axis=0)
+    return pd.concat([lags, slopes, neg_slope_warning, r2_warning], axis=0)

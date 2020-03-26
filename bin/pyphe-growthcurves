@@ -4,6 +4,7 @@ import argparse
 import pandas as pd
 from pyphe import growthcurves
 from pyphe.analysis import check_mkdir
+from os import path
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Welcome to pyphe-growthcurves, part of the pyphe toolbox. Written by stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-Lab/pyphe.')
@@ -28,11 +29,13 @@ if __name__ == '__main__':
         print('The first column must contain the timepoint and these must only have numeric values (no units or other string).')
     assert all(gdata.index[i] <= gdata.index[i+1] for i in range(len(gdata.index)-1)), 'Timepoints must be in ascending order.'
     
-    outdir = args.out.strip('/').strip{'\\')
+    outdir = args.out.strip('/').strip('\\')
+    in_baseStr = '.'.join(path.split(args.input)[1].split('.')[:-1])
+    
     check_mkdir(outdir)
-    result = growthcurves.analyse_growthcurve(gdata, args.fitrange, args.t0_fitrange, args.lag_method, args.lag_threshold, args.plots, args.plot_ylim, outdir)
+    result = growthcurves.analyse_growthcurve(gdata, args.fitrange, args.t0_fitrange, args.lag_method, args.lag_threshold, args.plots, args.plot_ylim, outdir, in_baseStr)
       
-    result.to_csv(outdir + '/' + .'.join(args.input.split('.')[:-1]) + '_results.csv')
+    result.to_csv(outdir + '/' + in_baseStr + '_results.csv')
     
     print('Analysis done: %s'%args.input)
 

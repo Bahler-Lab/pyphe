@@ -14,6 +14,8 @@ if __name__ == '__main__':
     parser.add_argument('--values_column', type=str, default='Colony_size_corr_checked', help='Name of the column in the data report to use as fitness values. Defaults to "Colony_size_corr_checked".')
     parser.add_argument('--control_condition', type=str, required=True, help='Name of the control condition. Effect sizes and and p-values will conpare each condition agaisnt the control condition.')
     parser.add_argument('--ld_encoding', default='utf-8', type=str, help='Encoding of the data report table to be passed to pandas.read_csv().')
+    parser.add_argument('--filter_circularity', type=float, default=None, help='Exclude colonies from the analysis with a circularity below the one specified. A circularity of 1 corresponds to a perfect circle. We recommend a threshold around 0.85.')
+    parser.add_argument('--set_missing_na', action='store_true', default=False, help='Set 0-sized colonies to NA. This is recommended if you expect no missing colonies in your data, which means these are probably due to pinning errors.')
 
     args = parser.parse_args()
 
@@ -25,4 +27,4 @@ if __name__ == '__main__':
     #Load ld
     ld = pd.read_csv(args.ld, index_col=0, ld_encoding=args.ld_encoding)
 
-    interpret(ld, args.condition_column, args.strain_column, args.values_column, args.control_condition, args.out)
+    interpret(ld, args.condition_column, args.strain_column, args.values_column, args.control_condition, args.out,circularity=args.circularity, set_missing_na=args.set_missing_na)

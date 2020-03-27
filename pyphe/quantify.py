@@ -5,6 +5,9 @@ import math
 from warnings import warn
 from matplotlib import pyplot as plt
 from scipy.spatial import distance
+from scipy.signal import find_peaks
+from scipy.stats import trim_mean
+import math
 
 from skimage.filters import threshold_otsu, gaussian, threshold_local
 from skimage.morphology import remove_small_objects
@@ -38,6 +41,49 @@ def make_grid(gd):
             
     return grid, 0.5*(griddistx+griddisty)
 
+
+def make_grid_auto(im, grid):
+
+    nrows, ncols = map(int,grid.split('-'))
+    
+    def find_grid_positions_1d(image, axis, n):
+
+        #extract means across axis
+        imvals = image.mean(axis=axis)
+        imvals = imvals - imvals.min()
+        imvals = imvals / imvals.max()
+
+        #find peaks. Define minimum distance based on image dimension
+        peaks = find_peaks(imvals, distance=(len(imvals)-0.15*len(imvals))/n)[0]
+
+        #find distance between colonies. Use trimmed mean which is robust to outliers. Median is not precise enough (need sub-pixel resolution)
+        med = trim_mean(peaks[1:] - peaks[:-1], 0.2)
+
+        #create hypothetical, ideal grid based on mean distance
+        to_fit = np.linspace(0, med*(n-1),n)
+
+        #Find the maximum offset and all offset positions to try
+        max_offset = len(imvals)-to_fit[-1]
+        pos_to_try = np.linspace(0,int(max_offset),int(max_offset)+1)
+
+        #Make a cosine function with the same period as the mean distance between colonies
+        b = 2 * math.pi / med
+        x = np.linspace(0,(n-1)*med,int((n-1)*med))
+        y = (1+np.cos(x*b))/2#scale roughly to data
+        errors = [((y - imvals[o:len(y)+o])**2).sum() for o in pos_to_try.astype(int)]
+
+        return to_fit + np.argmin(errors), med
+
+    cols, colmed = find_grid_positions_1d(im,0,ncols)
+    rows, rowmed = find_grid_positions_1d(im,1,nrows)
+
+    grid = {}
+    for ri,r in enumerate(rows):
+        for ci,c in enumerate(cols):
+            grid[(ri+1, ci+1)] = (r, c)
+               
+    return grid, 0.5*(colmed+rowmed)
+    
 
 def match_to_grid(labels, centroids, grid, griddist, d=3, reportAll=False):
     '''
@@ -123,13 +169,19 @@ def check_and_negate(orig_image, negate=True):
         
     return image
 
-def quantify_single_image_size(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_single_image_size(orig_image, grid, auto, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
     '''
     Process a single image to extract colony sizes.
     '''
     
     #Prepare image
     image = check_and_negate(orig_image, negate=negate)
+    
+    #Create grid
+    if auto:
+        grid, griddist = make_grid_auto(image, grid)
+    else:
+        grid, griddist = make_grid(grid)
         
     #Make mask
     mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=False)
@@ -155,14 +207,20 @@ def quantify_single_image_size(orig_image, grid, griddist, t=1, d=3, s=1, negate
     
     return (data, qc)
 
-def quantify_single_image_redness(orig_image, grid, griddist, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_single_image_redness(orig_image, grid, auto, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
     '''
-    Process a single image (phloxine or batch mode).
+    Process a single image (phloxine mode).
     '''
     
     #Prepare image
     image = prepare_redness_image(orig_image)
-        
+    
+    #Create grid
+    if auto:
+        grid, griddist = make_grid_auto(image, grid)
+    else:
+        grid, griddist = make_grid(grid)
+    
     #Make mask
     #Adjust threshold for redness images slightly, just what works in practise. t parameter is still applied as additional coefficient
     mask = make_mask(image, t=1.02*t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=True)
@@ -193,7 +251,7 @@ def quantify_single_image_redness(orig_image, grid, griddist, t=1, d=3, s=1, neg
 
     return (data, qc)
     
-def quantify_batch(images, grid, griddist, mode, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=None, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_batch(images, grid, auto, mode, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=None, hardImageThreshold=None, hardSizeThreshold=None):
     '''
     Analyse colony size for batch of plates. Depending on mode, either the quantify_single_image_grey or quantify_single_image_redness function is applied to all images.
     '''
@@ -201,9 +259,9 @@ def quantify_batch(images, grid, griddist, mode, qc='qc_images', out='pyphe_quan
     for fname, im in zip(images.files, images):
         
         if mode == 'batch':
-            data, qc_image = quantify_single_image_size(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+            data, qc_image = quantify_single_image_size(np.copy(im), grid, auto, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
         elif mode == 'redness':
-            data, qc_image = quantify_single_image_redness(np.copy(im), grid, griddist, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+            data, qc_image = quantify_single_image_redness(np.copy(im), grid, auto, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
         else:
             raise ValueError('Mode must be batch or redness.')
         
@@ -258,7 +316,7 @@ def quantify_single_image_fromTimecourse(orig_image, mask, negate=True, calibrat
     return data
 
         
-def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x'):
+def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x'):
     '''
     Analyse a timeseries of images. Make the mask based on the last image and extract intensity information from all previous images based on that.
     '''
@@ -267,6 +325,12 @@ def quantify_timecourse(images, grid, griddist, qc='qc_images', out='pyphe_quant
         fimage = invert(images[-1])   
     else: 
         fimage = images[-1]
+    
+    #Create grid
+    if auto:
+        grid, griddist = make_grid_auto(fimage, grid)
+    else:
+        grid, griddist = make_grid(grid)
     
     #Make mask
     mask = make_mask(fimage, t=t, s=s, hardSizeThreshold=hardSizeThreshold)

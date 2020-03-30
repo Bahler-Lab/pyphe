@@ -147,9 +147,9 @@ class Plate():
             tf.columns = tf.columns.map(str)
             
             if c == 'max_slope':
-                self.pos_data['Colony_size'] = tf
+                self.pos_data['Colony_size'] = tf.astype(float)
             else:
-                self.pos_data[c] = tf
+                self.pos_data[c] = tf.astype(float)
 
         
     def read_layout_single_plate(self, kwargs={'header':None}):

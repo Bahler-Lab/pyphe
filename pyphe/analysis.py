@@ -108,14 +108,14 @@ class Plate():
         size = dat.pivot(index='row', columns='col', values='size')
         size.index.name = None
         size.index = size.index.map(str)
-        size.columns.name=None
+        size.columns.name = None
         size.columns = size.columns.map(str)
         self.pos_data['Colony_size'] = size
         
         circularity = dat.pivot(index='row', columns='col', values='circularity')
         circularity.index.name = None
         circularity.index = circularity.index.map(str)
-        circularity.columns.name=None
+        circularity.columns.name = None
         circularity.columns = circularity.columns.map(str)
         self.pos_data['Colony_circularity'] = circularity
         
@@ -127,10 +127,29 @@ class Plate():
         size = dat.pivot(index='row', columns='column', values='mean_intensity')
         size.index.name = None
         size.index = size.index.map(str)
-        size.columns.name=None
+        size.columns.name = None
         size.columns = size.columns.map(str)
         
         self.pos_data['Colony_size'] = size
+    
+    def read_pyphebatch_single_image(self):
+        '''Read  column from pyphe-quantify redness output file'''
+        
+        dat = pd.read_csv(self.meta_data['Data_path'])
+
+        size = dat.pivot(index='row', columns='column', values='area')
+        size.index.name = None
+        size.index = size.index.map(str)
+        size.columns.name = None
+        size.columns = size.columns.map(str)        
+        self.pos_data['Colony_size'] = size
+             
+        circularity = dat.pivot(index='row', columns='column', values='circularity')
+        circularity.index.name = None
+        circularity.index = circularity.index.map(str)
+        circularity.columns.name = None
+        circularity.columns = circularity.columns.map(str)
+        self.pos_data['Colony_circularity'] = circularity
         
     def read_pgc_single_image(self):
         '''Read pyphe-growthcurves output file'''
@@ -470,6 +489,9 @@ def pyphe_cmd(wdirectory=None, grid_norm=None, out_ld=None, qcplots=None, check_
         
     elif input_type == 'pyphe-growthcurves':
         exp.plates.map(Plate.read_pgc_single_image)
+        
+    elif input_type == 'pyphe-quantify-batch':
+                exp.plates.map(Plate.read_pyphebatch_single_image)
     
     else:
         raise ValueError('Unrecignised input_type')

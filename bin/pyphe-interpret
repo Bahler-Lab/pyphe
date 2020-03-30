@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 from pyphe.interpret import interpret 
+import pandas as pd
 
 if __name__ == '__main__':
     ###Set up parsing of command line arguments with argparse###

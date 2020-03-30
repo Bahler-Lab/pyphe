@@ -62,16 +62,16 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     print('Number of non-NA data points: %i'%len(ld.loc[~pd.isnull(ld[values_column])].index))
     
     ###Simple QC filters
-    n_datapoints = len(ld.loc[~ld[values_column].isnull()].index)
+    n_datapoints = (~ld[values_column].isnull()).sum()
     if circularity:
         ld.loc[ld['Colony_circularity']<circularity, values_column] = np.nan
-        nn_datapoints = len(ld.loc[~ld[values_column].isnull()].index)
-        print('Removed %i entries with circularity < %f'%(n_datapoints-nn_datapoints, circularity)
+        nn_datapoints = (~ld[values_column].isnull()).sum()
+        print('Removed %i entries with circularity < %f'%(n_datapoints-nn_datapoints, circularity))
         n_datapoints = nn_datapoints
     if set_missing_na:
         ld.loc[ld[values_column]==0, values_column] = np.nan
-        nn_datapoints = len(ld.loc[~ld[values_column].isnull()].index)
-        print('Removed %i entries with fitness 0'%(n_datapoints-nn_datapoints)
+        nn_datapoints = (~ld[values_column].isnull()).sum()
+        print('Removed %i entries with fitness 0'%(n_datapoints-nn_datapoints))
         n_datapoints = nn_datapoints
     
     ###Group by replicates

@@ -348,6 +348,72 @@ If you prefer to use the GUI, just run 'pyphe-analyse-gui'. You will need PySimp
 
 ### Pyphe-interpret
 
+Pyphe-interpret reports summary statistics and tests for differential fitness using t-tests. It is flexible and can in theory be used with any dataset in tidy format. Specifically, it was designed to answer two types of questions: (1) Check for each condition separately (--axis_column <condition_column>) if there is a significant difference in means between a mutant strain and a control strain (--grouping_column <strain_id_column>). Or (2) Check for each strain separately (--axis_column <strain_id_column>) if there is a significant difference in the means of the strain in the assay condition versus the control condition (--grouping_column <condition_column>). The second option tests for condition-specific growth effects (i.e. is does not return significant results if a strain is always faster or always slower growing than the grid strain). 
+
+```
+usage: pyphe-interpret [-h] --ld LD [--out OUT] --axis_column AXIS_COLUMN
+                       --grouping_column GROUPING_COLUMN
+                       [--values_column VALUES_COLUMN] --control CONTROL
+                       [--ld_encoding LD_ENCODING]
+                       [--filter_circularity FILTER_CIRCULARITY]
+                       [--set_missing_na]
+
+Welcome to pyphe-interpret, part of the pyphe toolbox. Written by
+stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-
+Lab/pyphe. Setting your column names correctly is crucial. Let us assume you
+have measured many strains in many conditions. Now you would like to know for
+each strain-condition pair if it is significant. There are essentially two
+ways of doing this. (1) Check for each condition separately (--axis_column
+<condition_column>) if there is a significant difference in means between a
+mutant strain and a control strain (--grouping_column <strain_id_column>). Or
+(2) Check for each strain separately (--axis_column <strain_id_column>) if
+there is a significant difference in the means of the strain in the assay
+condition versus the control condition (--grouping_column <condition_column>).
+The second option tests for condition-specific growth effects (i.e. is does
+not return significant results if a strain is always faster or always slower
+growing than the grid strain). In both cases you need to specify the control
+against which to test usiing --control and this has to be a value that appears
+in the axis column. You should define the dependent variable of the t-test
+using --values_column.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --ld LD               Path to the Data Report Table produced by pyphe-
+                        analyse.
+  --out OUT             Specifies the path where to save the output data
+                        result. By default, a table with all replicates will
+                        be saved as pyphe-quantify-report_reps.csv and the
+                        statistic table will be saved as pyphe-quantify-
+                        report_summaryStats.csv in the current working
+                        directory. Existing files will be overwritten.
+  --axis_column AXIS_COLUMN
+                        Name of the column in the data report to repeat
+                        t-tests along. Data will be grouped by the
+                        grouping_column and differences between all unique
+                        values found in the axis column versus the specified
+                        control will be tested for.
+  --grouping_column GROUPING_COLUMN
+                        Name of the column in the data report to use as the
+                        grouping variable for t-tests.
+  --values_column VALUES_COLUMN
+                        Name of the column in the data report to use as
+                        fitness values. This will be the dependent variable
+                        for t-tests. Defaults to "Colony_size_corr_checked".
+  --control CONTROL     Name of the control to compare against. This must be a
+                        value found in the axis column.
+  --ld_encoding LD_ENCODING
+                        Encoding of the data report table to be passed to
+                        pandas.read_csv().
+  --filter_circularity FILTER_CIRCULARITY
+                        Exclude colonies from the analysis with a circularity
+                        below the one specified. A circularity of 1
+                        corresponds to a perfect circle. We recommend a
+                        threshold around 0.85.
+  --set_missing_na      Set 0-sized colonies to NA. This is recommended if you
+                        expect no missing colonies in your data, which means
+                        these are probably due to pinning errors.
+```
+
 ## Support and FAQs
 If you run into trouble, please check if your problem is discussed below. If not, feel free to send an email to stephan.kamrad@crick.ac.uk or raise an issue here on github. 
 

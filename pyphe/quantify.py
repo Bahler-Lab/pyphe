@@ -316,7 +316,7 @@ def quantify_single_image_fromTimecourse(orig_image, mask, negate=True, calibrat
     return data
 
         
-def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x'):
+def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x', timepoints=None):
     '''
     Analyse a timeseries of images. Make the mask based on the last image and extract intensity information from all previous images based on that.
     '''
@@ -350,9 +350,21 @@ def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t
     if not reportAll:
         data.columns = data.columns.map(lambda x: blob_to_pos[x])
         data = data[sorted(list(data), key=lambda x: 100*int(x.split('-')[0]) + int(x.split('-')[1]))]
+    
+    #Set correct index
     if not reportFileNames:
-        data.index = range(1,len(data.index)+1)
-        
+        if timepoints:
+            with open(timepoints, 'r') as tpfile:
+                tps = tpfile.readlines()
+                tps = [s.strip() for s in tps]
+            if len(tps) == len(data.index):
+                data.index = tps
+            else:
+                warn('Could not read timepoints from file as the file has thw wrong number of entries. Falling back to simple numbering.')
+                data.index = range(1,len(data.index)+1)
+        else:
+            data.index = range(1,len(data.index)+1)
+
     #Save table
     image_name = os.path.basename(images.files[-1])
     data.to_csv(os.path.join(out, image_name+'.csv'))

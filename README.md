@@ -185,7 +185,9 @@ Pyphe-growthcurves will produce a csv file with extracted growth parameters. The
 
 ### Pyphe-quantify
 
-Pyphe quantify extracts colony parameters from images. In can operate in three distinct modes analysing colony sizes for each image individually (batch mode), analysing redness for each image individually (redness mode) or obtaining a growth curve from an image timeseries (timeseries mode). The --grid parameter is required define the position of colonies on the plate. You can either use one of our preconfigured positions if you are using the pp3 fixture or define your own (see the manual below).
+Pyphe quantify extracts colony parameters from images. In can operate in three distinct modes analysing colony sizes for each image individually (batch mode), analysing redness for each image individually (redness mode) or obtaining a growth curve from an image timeseries (timeseries mode).
+The --grid parameter is required define the position of colonies on the plate. You can either use automatic grid detection, one of our preconfigured positions if you are using the pp3 fixture or define your own (see the manual below). Images can be in any format (e.g. jpg, tiff, png). Images should be cropped closely to the colonies (this is important for good thresholding and automatic grid detection), i.e. not contain parts of the plate edges or surroundings. In batch and timecourse mode, pyphe-quantify assumes that images were acquired using transmission scanning, where colonies appear darker then the surrounding agar. If this is not the case and you took images by reflective scanning or with a camera, use --negate False. In batch and timecourse mode, images are epxected to be grayscale. If they are not, they will be converted (by simply summing all channels) and a warning will be thrown. 
+
 
 ```
 usage: pyphe-quantify [-h] --grid GRID [--pattern PATTERN] [--t T] [--d D]

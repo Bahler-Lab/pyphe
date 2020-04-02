@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument('--values_column', type=str, default='Colony_size_corr_checked', help='Name of the column in the data report to use as fitness values. This will be the dependent variable for t-tests. Defaults to "Colony_size_corr_checked".')
     parser.add_argument('--control', type=str, required=True, help='Name of the control to compare against. This must be a value found in the axis column.')
     parser.add_argument('--ld_encoding', default='utf-8', type=str, help='Encoding of the data report table to be passed to pandas.read_csv().')
-    parser.add_argument('--filter_circularity', type=float, default=None, help='Exclude colonies from the analysis with a circularity below the one specified. A circularity of 1 corresponds to a perfect circle. We recommend a threshold around 0.85.')
+    parser.add_argument('--circularity', type=float, default=None, help='Exclude colonies from the analysis with a circularity below the one specified. A circularity of 1 corresponds to a perfect circle. We recommend a threshold around 0.85.')
     parser.add_argument('--set_missing_na', action='store_true', default=False, help='Set 0-sized colonies to NA. This is recommended if you expect no missing colonies in your data, which means these are probably due to pinning errors.')
 
     args = parser.parse_args()
@@ -26,6 +26,6 @@ if __name__ == '__main__':
         print('%s: %s'%(k, str(v)))
 
     #Load ld
-    ld = pd.read_csv(args.ld, index_col=0, ld_encoding=args.ld_encoding)
+    ld = pd.read_csv(args.ld, index_col=0, encoding=args.ld_encoding)
 
     interpret(ld, args.axis_column, args.grouping_column, args.values_column, args.control, args.out, circularity=args.circularity, set_missing_na=args.set_missing_na)

@@ -360,7 +360,7 @@ def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t
             if len(tps) == len(data.index):
                 data.index = tps
             else:
-                warn('Could not read timepoints from file as the file has thw wrong number of entries. Falling back to simple numbering.')
+                warn('Could not read timepoints from file as the file has the wrong number of entries. Falling back to simple numbering.')
                 data.index = range(1,len(data.index)+1)
         else:
             data.index = range(1,len(data.index)+1)

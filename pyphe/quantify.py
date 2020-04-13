@@ -54,10 +54,15 @@ def make_grid_auto(im, grid):
         imvals = imvals / imvals.max()
 
         #find peaks. Define minimum distance based on image dimension
-        peaks = find_peaks(imvals, distance=(len(imvals)-0.15*len(imvals))/n)[0]
+        peaks = find_peaks(imvals, distance=(len(imvals)-0.2*len(imvals))/n)[0]
 
         #find distance between colonies. Use trimmed mean which is robust to outliers. Median is not precise enough (need sub-pixel resolution)
         med = trim_mean(peaks[1:] - peaks[:-1], 0.2)
+        #for bad input images the distance between colonies times the number of rows/columns can exceed image dimensions. 
+        #In this case, guess the distance based on image dimensions and number of colonies
+        if med*n > len(imvals):
+            print('Could not detect enough peaks. Guessing grid positions. Please check QC images carefully.')
+            med = (len(imvals)-0.2*len(imvals))/n
 
         #create hypothetical, ideal grid based on mean distance
         to_fit = np.linspace(0, med*(n-1),n)

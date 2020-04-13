@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser.add_argument('--gridnorm', type=str, choices=['standard384', 'standard1536'], help='Perform reference grid normalisation. Standard384 refers to plates which are in 384 (16x24) format with the reference grid in 96 format in the top left corner. Standard1536 refers to plates in 1536 format (32x48( with two 96 reference grids in the top left and bottom right corners.')
     parser.add_argument('--extrapolate_corners', default=False, action='store_true', help='If working in standard1536 format, set this option to extrapolate the reference grid in the bottom left and top right corner. A linear regression will be trained across all top left and bottom right corners on plates in the experiment to predict hypothetical grid colony sizes in the other two corners.')
     parser.add_argument('--rcmedian', default=False, action='store_true', help='Perform row/column median normalisation. If --gridnorm will be performed first if both parameters are set.')
-    parser.add_argument('--check', default=True, type=bool, help='Check colony sizes after normalisation for negative and infinite colony sizes *(normalisation artefacts), throw a warning and set to NA.')
+    parser.add_argument('--nocheck', default=False, action='store_true', help='Check colony sizes after normalisation for negative and infinite colony sizes *(normalisation artefacts), throw a warning and set to NA.')
     parser.add_argument('--qc_plots', type=str, help='Specify a folder in which to save qc plots for each plate.')
 
 
@@ -36,4 +36,5 @@ if __name__ == '__main__':
 
     gridQ = True if args.gridnorm else False
     qcQ = True if args.qc_plots else False
-    pyphe_cmd(grid_norm=gridQ, out_ld=args.out, qcplots=qcQ, check_setNA=args.check, qcplot_dir=args.qc_plots, exp_data_path=args.edt, extrapolate_corners=args.extrapolate_corners, grid_pos=args.gridnorm, rcmedian=args.rcmedian, input_type=args.format, load_layouts=args.load_layouts)
+    check = not args.nocheck
+    pyphe_cmd(grid_norm=gridQ, out_ld=args.out, qcplots=qcQ, check_setNA=check, qcplot_dir=args.qc_plots, exp_data_path=args.edt, extrapolate_corners=args.extrapolate_corners, grid_pos=args.gridnorm, rcmedian=args.rcmedian, input_type=args.format, load_layouts=args.load_layouts)

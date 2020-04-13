@@ -362,6 +362,10 @@ class Plate():
         '''
 
         data = self.pos_data[inkey]
+        ##In some rare cases the input DataFrame can be empty. In that case, just set to an empty DataFrame
+        if data.empty:
+            self.pos_data[outkey] = pd.DataFrame([[]])
+            return None
         data = data.unstack()
 
         #Ignore na
@@ -404,15 +408,20 @@ class Plate():
         '''
         unstacked = []
         for k, frame in self.pos_data.iteritems():
+            if frame.empty:
+                continue
             l_unstacked = frame.copy()
             l_unstacked.columns.name = 'Column'
             l_unstacked.index.name = 'Row'
             l_unstacked = l_unstacked.unstack()
             l_unstacked.name = k
             unstacked.append(l_unstacked)
-
-        long_data = pd.concat(unstacked, axis=1)
-        long_data = long_data.reset_index()
+        if len(unstacked) == 0:
+            warn('No data associated with Plate %s. Please check input data'%self.plateid)
+            return pd.DataFrame([[]])
+        else:
+            long_data = pd.concat(unstacked, axis=1)
+            long_data = long_data.reset_index()
 
         return long_data
 

@@ -68,7 +68,7 @@ optional arguments:
                         current date YYYYMMDD.
   --postfix POSTFIX     Name postfix for output files. Defaults to empty
                         string.
-  --fixture {som3_edge,som3}
+  --fixture {som3_edge,som3,petrie}
                         ID of the fixture you are using.
   --resolution {150,300,600,900,1200}
                         Resolution for scanning in dpi. Default is 600.
@@ -104,7 +104,7 @@ optional arguments:
                         current date YYYYMMDD.
   --postfix POSTFIX     Name postfix for output files. Defaults to empty
                         string.
-  --fixture {som3_edge,som3}
+  --fixture {som3_edge,som3,petrie}
                         ID of the fixture you are using.
   --resolution {150,300,600,900,1200}
                         Resolution for scanning in dpi. Default is 600.

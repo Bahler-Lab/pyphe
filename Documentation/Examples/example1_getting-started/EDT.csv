@@ -1,0 +1,5 @@
+,Data_path,Image_path,Condition,Layout_path,Processing_date,Notes
+p1_ammonium,pyphe_quant/p1.jpg.csv,images/p1.jpg,ammonium,Layout.csv,24.5.2020,
+p2_valine,pyphe_quant/p2.jpg.csv,images/p2.jpg,valine,Layout.csv,24.5.2020,some comment
+p3_glycine,pyphe_quant/p3.jpg.csv,images/p3.jpg,glycine,Layout.csv,24.5.2020,
+p4_arginine,pyphe_quant/p4.jpg.csv,images/p4.jpg,arginine,Layout.csv,24.5.2020,

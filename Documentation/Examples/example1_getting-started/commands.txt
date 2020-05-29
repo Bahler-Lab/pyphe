@@ -1,0 +1,4 @@
+pip install pyphe
+pyphe-quantify batch --grid auto_1536 --pattern images/*.jpg 
+pyphe-analyse --edt EDT.csv --format pyphe-quantify-batch --load_layouts --gridnorm standard1536 --qc_plots analyse-qc 
+pyphe-interpret --ld pyphe-analyse_data_report.csv --set_missing_na --circularity 0.85 --values_column Colony_size_corr_checked --control JB22 --grouping_column Condition --axis_column Strain --out example1_results

@@ -52,10 +52,10 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     print('Data report loaded successfully')
     
     conditions = ld[condition_column].unique()
-    print('Number of conditions: %i'%len(conditions))
+    print('Number of unique elements in axis column: %i'%len(conditions))
     
     strains = ld[strain_column].unique()
-    print('Number of strains: %i'%len(strains))
+    print('Number of unique elements in grouping column: %i'%len(strains))
     
     print('Number of plates: %i'%len(ld['Plate'].unique()))
 

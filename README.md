@@ -3,8 +3,12 @@
 # Welcome to the pyphe toolbox
 A python toolbox for phenotype analysis of arrayed microbial colonies written by Stephan Kamrad (stephan.kamrad at crick.ac.uk).
 
-Please see our preprint for a detailed description of the algorithms and applications and the FAQs at the bottom of the page.
+For a quick overview, please see our [10 minute video tutorial](https://www.youtube.com/watch?v=lQ3lXIdhA1c&t=5s).
 
+For more information, please see our [_eLife_ paper](https://elifesciences.org/articles/55160).
+
+Please cite as:
+> Kamrad, S., Rodríguez-López, M., Cotobal, C., Correia-Melo, C., Ralser M., Bähler J. (2020). Pyphe, a python toolbox for assessing microbial growth and cell viability in high-throughput colony screens. eLife 9:e55160
 
 ## Installation
 1. Most tools are cross-platform compatible but scanning will only work on a Linux OS. The scanners need to be accessible by [SANE](http://www.sane-project.org/) and [ImageMagick](https://imagemagick.org/) needs to be installed and callable from the comman line.

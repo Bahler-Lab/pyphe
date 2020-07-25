@@ -60,9 +60,9 @@ def make_grid_auto(im, grid):
         med = trim_mean(peaks[1:] - peaks[:-1], 0.2)
         #for bad input images the distance between colonies times the number of rows/columns can exceed image dimensions. 
         #In this case, guess the distance based on image dimensions and number of colonies
-        if med*n > len(imvals):
+        if med*(n-1) > len(imvals):
             print('Could not detect enough peaks. Guessing grid positions. Please check QC images carefully.')
-            med = (len(imvals)-0.2*len(imvals))/n
+            med = (len(imvals)-0.1*len(imvals))/(n-1)
 
         #create hypothetical, ideal grid based on mean distance
         to_fit = np.linspace(0, med*(n-1),n)
@@ -161,8 +161,8 @@ def check_and_negate(orig_image, negate=True):
     
     #Check if images are grayscale and convert if necessary
     if len(image.shape) == 3:
-        warn('The following is not a greyscale image and will be converted before processing: %s'%images.files[i])
-        image = image[:,:,0] + image[:,:,1] + image[:,:,2]
+        warn('Image is not in greyscale, converting before processing')
+        image = image.astype(int).mean(axis=2)
 
     #Convert to float and re-scale to [0,1]            
     image = image.astype(float)
@@ -174,7 +174,7 @@ def check_and_negate(orig_image, negate=True):
         
     return image
 
-def quantify_single_image_size(orig_image, grid, auto, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_single_image_size(orig_image, grid, auto, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None, localThresh=None):
     '''
     Process a single image to extract colony sizes.
     '''
@@ -189,7 +189,7 @@ def quantify_single_image_size(orig_image, grid, auto, t=1, d=3, s=1, negate=Tru
         grid, griddist = make_grid(grid)
         
     #Make mask
-    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=False)
+    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=localThresh)
     
     #Measure regionprobs
     data = {r.label : {p : r[p] for p in ['label', 'area', 'centroid', 'mean_intensity', 'perimeter']} for r in regionprops(mask, intensity_image=image)}
@@ -256,7 +256,7 @@ def quantify_single_image_redness(orig_image, grid, auto, t=1, d=3, s=1, negate=
 
     return (data, qc)
     
-def quantify_batch(images, grid, auto, mode, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=None, hardImageThreshold=None, hardSizeThreshold=None):
+def quantify_batch(images, grid, auto, mode, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=None, hardImageThreshold=None, hardSizeThreshold=None, localThresh=None):
     '''
     Analyse colony size for batch of plates. Depending on mode, either the quantify_single_image_grey or quantify_single_image_redness function is applied to all images.
     '''
@@ -264,7 +264,7 @@ def quantify_batch(images, grid, auto, mode, qc='qc_images', out='pyphe_quant', 
     for fname, im in zip(images.files, images):
         
         if mode == 'batch':
-            data, qc_image = quantify_single_image_size(np.copy(im), grid, auto, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
+            data, qc_image = quantify_single_image_size(np.copy(im), grid, auto, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, localThresh=localThresh)
         elif mode == 'redness':
             data, qc_image = quantify_single_image_redness(np.copy(im), grid, auto, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
         else:

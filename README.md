@@ -14,7 +14,7 @@ Please cite as:
 1. Most tools are cross-platform compatible but scanning will only work on a Linux OS. The scanners need to be accessible by [SANE](http://www.sane-project.org/) and [ImageMagick](https://imagemagick.org/) needs to be installed and callable from the comman line.
 2. Pyphe requires Python 3 and a few common packages, available through the [anaconda distribution](https://www.anaconda.com/distribution/).
 3. Install pyphe by running 'pip install pyphe' in your terminal.
-4. Open a new terminal and try and run 'pyphe-quantify -h' which should show the help page of one of pyphe's command line tools. See the FAQs at the end for what to do if you're on Windows.
+4. Open a new terminal and try and run 'pyphe-quantify -h' which should show the help page of one of pyphe's command line tools. On Windows, make sure you are using the Anaconda Prompt, not the Anaconda Powershell Prompt.
 
 
 ## Overview
@@ -29,6 +29,9 @@ Please see our paper for a detailed protocol and explanations of the algorithms.
 ## Support
 Please check the manuals below carefully, they are also available in the terminal by running the command with the -h option only. If things are still not working, please email me (stephan.kamrad@crick.ac.uk) and I will try and help. If you think you have discovered a bug, or would like to request a new feature, please raise an issue on www.github.com/Bahler-Lab/pyphe.
 
+If you get an error like this, make sure you are not using the Anaconda Powershell Prompt:
+```python: can't open file 'C:\Users\user1\Anaconda3\Scripts"C:\Users\user1\Anaconda3\Scripts\pyphe-quantify.bat  -h ': [Errno 22] Invalid argument```
+
 ## Manual
 
 All pyphe tools have a similar command line interface, based on the python argparse package. Generally, parameters are set using --<parameter_name> optionally followed by a value. All _pyphe_ tools can be used with relative file paths so make sure to navigate to the correct working directory before running a _pyphe_ command.
@@ -40,13 +43,13 @@ This tools allows you to take consecutive scans of sets of plates, which are the
 #### Prerequisites
 1. This tool will only run on Linux operating systems and uses the SANE library for image acquisition.
 
-2. Make sure your scanner is installed correctly and you can acquire images using the scanimage command. The Gray mode will only work on Epson V800 scanners (potentially the V700 and V750 model as well) and the TPU8x10 transmission scanning source must be enabled. This was first implemented in by Zackrisson et al. in the [scanomatics pipeline](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5015956/) and requires the installation of a hacked SANE driver. See the instructions in their [wiki](https://github.com/Scan-o-Matic/scanomatic/wiki/Installing-scanners) for how to do this.
+2. Make sure your scanner is installed correctly and you can acquire images using the scanimage command. The Gray mode will only work on Epson V800 and V850 scanners (potentially the V700 and V750 model as well) and the TPU8x10 transmission scanning source must be enabled. This should work by default if you are using the V800/850 model and a recent Linux OS. Otherwise, there is excellent documentation available from Zackrisson et al. and the [scanomatics pipeline](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5015956/) for how to make this work using a hacked SANE driver. Please see the instructions in their [wiki](https://github.com/Scan-o-Matic/scanomatic/wiki/Installing-scanners).
 
 2. Make sure [ImageMagick](https://imagemagick.org/index.php) is installed and the 'convert' tool can be called from the command line.
 
-3. If the Pyphe toolbox has been installed correctly, you should be able to run _pyphe-scan_ in your terminal. If not, check that the files in the 'bin' directory are executable and the bin folder has been added to your path variable.
+3. If the Pyphe toolbox has been installed correctly, you should be able to run _pyphe-scan_ in your terminal. 
 
-4. With a laser cutter, make a fixture to hold your plates in place. We provide an svg file with the cutting shape in the Documentation directory. Use tape to hold your fixture into place, it should be pushed against the back of the scanner (where the cables are) with the top of the plates facing left. Pyphe-scan and pyphe-quantify come pre-configured for using the provided fixture on an Epson V800 scanner but it is easy to add your own fixture and cropping settings. If you want to use your own fixture, see below of how to add the geometry information to pyphe-scan. 
+4. With a laser cutter, make a fixture to hold your plates in place. We provide an svg file with the cutting shape in the Documentation directory. Use tape to hold your fixture into place, it should be pushed against the back of the scanner (where the cables are) with the top of the plates facing left. Pyphe-scan and pyphe-quantify come pre-configured for using the provided fixture on an Epson V800/V850 scanner but it is easy to add your own fixture and cropping settings. If you want to use your own fixture, see below of how to add the geometry information to pyphe-scan. 
 
 #### Scanning plate batches
 

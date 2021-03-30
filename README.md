@@ -11,7 +11,7 @@ Please cite as:
 > Kamrad, S., Rodríguez-López, M., Cotobal, C., Correia-Melo, C., Ralser M., Bähler J. (2020). Pyphe, a python toolbox for assessing microbial growth and cell viability in high-throughput colony screens. eLife 9:e55160
 
 ## Installation
-1. Most tools are cross-platform compatible but scanning will only work on a Linux OS. The scanners need to be accessible by [SANE](http://www.sane-project.org/) and [ImageMagick](https://imagemagick.org/) needs to be installed and callable from the comman line.
+1. Most tools are cross-platform compatible but scanning will only work on a Linux OS. The scanners need to be accessible by [SANE](http://www.sane-project.org/) and [ImageMagick](https://imagemagick.org/) needs to be installed and accessible from the command line.
 2. Pyphe requires Python 3 and a few common packages, available through the [anaconda distribution](https://www.anaconda.com/distribution/).
 3. Install pyphe by running 'pip install pyphe' in your terminal.
 4. Open a new terminal and try and run 'pyphe-quantify -h' which should show the help page of one of pyphe's command line tools. On Windows, make sure you are using the Anaconda Prompt, not the Anaconda Powershell Prompt.

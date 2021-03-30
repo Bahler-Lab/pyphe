@@ -129,8 +129,14 @@ class Plate():
         size.index = size.index.map(str)
         size.columns.name = None
         size.columns = size.columns.map(str)
-        
         self.pos_data['Colony_size'] = size
+
+        circularity = dat.pivot(index='row', columns='column', values='circularity')
+        circularity.index.name = None
+        circularity.index = circularity.index.map(str)
+        circularity.columns.name = None
+        circularity.columns = circularity.columns.map(str)
+        self.pos_data['Colony_circularity'] = circularity
     
     def read_pyphebatch_single_image(self):
         '''Read  column from pyphe-quantify redness output file'''

@@ -22,14 +22,14 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     
     ###Check if essential columns exist
     print('Checking input table')
-    print('Checking if condition_column exists')
+    print('Checking if axis_column exists')
     if condition_column not in list(ld):
-        raise NameError('condition_column not found in table.')
+        raise NameError('Axis_column not found in table.')
     print('....OK')
 
-    print('Checking if strain_column exists')
+    print('Checking if grouping_column exists')
     if strain_column not in list(ld):
-        raise NameError('strain_column not found in table.')
+        raise NameError('grouping_column not found in table.')
     print('....OK')
 
     print('Checking if values_column exists')
@@ -37,9 +37,9 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
         raise NameError('values_column not found in table.')
     print('....OK')
 
-    print('Checking if control_condition exists in condition_column')
+    print('Checking if control exists in axis_column')
     if control_condition not in ld[condition_column].unique():
-        raise NameError('control_condition not found in condition_column.')
+        raise NameError('control not found in axis_column.')
     print('....OK')
 
     if circularity:

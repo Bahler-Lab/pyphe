@@ -81,7 +81,7 @@ def scan_batch(n, plateStart, prefix, postfix, fixture, resolution, geometries, 
         for plate in range(ppscan):
             plateNr = (i-1)*ppscan+plate
             if plateNr < n:
-                cmdStr = 'magick convert %s%s_rawscan%s_%s.tiff -crop %s +repage -rotate 90 -flop %s%s_%i_%s.%s'%(rdir, prefix, i, postfix, geometry[plate], wdir, prefix, plateNr+plateStart, postfix, format)
+                cmdStr = 'convert %s%s_rawscan%s_%s.tiff -crop %s +repage -rotate 90 -flop %s%s_%i_%s.%s'%(rdir, prefix, i, postfix, geometry[plate], wdir, prefix, plateNr+plateStart, postfix, format)
                 check_output(cmdStr, shell=True)
 
 
@@ -132,7 +132,7 @@ def scan_timecourse(nscans, interval, prefix, postfix, fixture, resolution, geom
         check_output(cmdStr, shell=True)
 
         for plate in range(ppscan):
-            cmdStr = 'magick convert %s%s_rawscan%i_%s.tiff -crop %s +repage -rotate 90 -flop %s%s/%s_%i_%s_plate%i.%s'%(rdir, prefix, i, postfix, geometry[plate], wdir, 'plate_'+str(plate+1), prefix, i, postfix, plate+1, format)
+            cmdStr = 'convert %s%s_rawscan%i_%s.tiff -crop %s +repage -rotate 90 -flop %s%s/%s_%i_%s_plate%i.%s'%(rdir, prefix, i, postfix, geometry[plate], wdir, 'plate_'+str(plate+1), prefix, i, postfix, plate+1, format)
             check_output(cmdStr, shell=True)
 
 

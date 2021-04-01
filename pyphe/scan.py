@@ -5,7 +5,7 @@ import sys
 from os import mkdir
 import numpy as np
 from datetime import datetime
-
+import time
 
 def find_scanner(scanner_index):
     '''
@@ -17,7 +17,7 @@ def find_scanner(scanner_index):
     
     #Look for scanners
     print('Searching for scanners.')
-    scanner_list = check_output('scanimage -L', shell=True)
+    scanner_list = check_output('scanimage -L', shell=True).decode('ascii')
     if 'No scanners were identified' in scanner_list:
         raise RuntimeError('Could not find any scanners. Please check scanners are connected and turned on, work with SANE and the TPU8x10 mode is enabled.') 
     scanner_list = [s for s in scanner_list.split('\n') if not s.strip()=='']
@@ -41,7 +41,7 @@ def scan_batch(n, plateStart, prefix, postfix, fixture, resolution, geometries, 
     print('Loaded geometry settings for fixture %s: '%fixture + str(geometry))
     geometry_temp = []
     for g in geometry:
-        glist = map(lambda x: str(int(int(x)*(resolution/600.0))), g.replace('+', 'x').split('x'))
+        glist = list(map(lambda x: str(int(int(x)*(resolution/600.0))), g.replace('+', 'x').split('x')))
         geometry_temp.append(glist[0] + 'x' + glist[1] + '+' + glist[2] + '+' + glist[3])
 
     print('Geometry settings scaled to resolution: ' + str(geometry_temp))
@@ -54,7 +54,7 @@ def scan_batch(n, plateStart, prefix, postfix, fixture, resolution, geometries, 
     print('Successfully created directories. Please make sure the scanner is turned on.')
 
     nscans = int(np.ceil(n/float(ppscan)))
-    labels = map(str, range(plateStart, plateStart+n))
+    labels = list(map(str, range(plateStart, plateStart+n)))
     labels += ['empty']*(ppscan-1)#Max number of emtpy bays in last scan
     for i in range(1, nscans+1):
         print('Preparing for scan %i out of %i'%(i,nscans))
@@ -101,7 +101,7 @@ def scan_timecourse(nscans, interval, prefix, postfix, fixture, resolution, geom
     print('Loaded geometry settings for fixture %s: '%fixture + str(geometry))
     geometry_temp = []
     for g in geometry:
-        glist = map(lambda x: str(int(int(x)*(resolution/600.0))), g.replace('+', 'x').split('x'))
+        glist = list(map(lambda x: str(int(int(x)*(resolution/600.0))), g.replace('+', 'x').split('x')))
         geometry_temp.append(glist[0] + 'x' + glist[1] + '+' + glist[2] + '+' + glist[3])
 
     print('Geometry settings scaled to resolution: ' + str(geometry_temp))

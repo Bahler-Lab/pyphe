@@ -321,7 +321,7 @@ def quantify_single_image_fromTimecourse(orig_image, mask, negate=True, calibrat
     return data
 
         
-def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x', timepoints=None):
+def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x', timepoints=None, localThresh=None):
     '''
     Analyse a timeseries of images. Make the mask based on the last image and extract intensity information from all previous images based on that.
     '''

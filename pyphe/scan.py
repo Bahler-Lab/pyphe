@@ -118,7 +118,7 @@ def scan_timecourse(nscans, interval, prefix, postfix, fixture, resolution, geom
     #Open log
     log = open(wdir+'/scanlog.txt', 'w')
     timepoints = open(wdir+'/timepoints.txt', 'w')
-    log.write(str(datetime.now()) + ' - Started scanplates-timecourse with the following parameters: ' + ' ,'.join(map(str,[nscans, interval, prefix, postfix, fixture, resolution, geometries, scanner, mode])))
+    log.write(str(datetime.now()) + ' - Started scanplates-timecourse with the following parameters: ' + ' ,'.join(map(str,[nscans, interval, prefix, postfix, fixture, resolution, geometries, scanner, mode])) + '\n')
     
     print('Successfully created directories.')
 

@@ -9,6 +9,7 @@ geometries = {
 'som3_edge':['2034x2865+84+0', '2034x2865+2292+0', '2034x2865+97+3135', '2034x2865+2317+3135'],
 'som3' : ['1726x2603+257+127', '1726x2603+2434+127', '1726x2603+257+3274', '1726x2603+2434+3274'],
 'petrie' : ['2105x2105+20+300', '2105x2105+2222+290', '2105x2105+20+3534', '2105x2105+2214+3534'],
+'som3-color' : ['1660x2325+418+636', '1660x2325+2594+636', '1660x2325+418+3784', '1660x2325+2594+3784'],
 }
 
 
@@ -30,4 +31,10 @@ if __name__ == '__main__':
     
     scanner = scan.find_scanner(args.scanner)
     
-    scan.scan_batch(args.nplates, args.start, args.prefix, args.postfix, args.fixture, args.resolution, geometries, scanner, args.mode, args.format)
+    fixture = str(args.fixture)
+    if args.mode == 'Color':
+        fixture = fixture + '-color'
+    if fixture not in list(geometries):
+        raise ValueError('No color version defined for fixture %s'%fixture)
+    
+    scan.scan_batch(args.nplates, args.start, args.prefix, args.postfix, fixture, args.resolution, geometries, scanner, args.mode, args.format)

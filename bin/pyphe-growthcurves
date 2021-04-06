@@ -21,6 +21,9 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
+    if not args.fitrange >1:
+        raise ValueError('--fitrange must be at least 2.')
+        
     #Import the data and perform some basic checks
     gdata = pd.read_csv(args.input, index_col=0)
     try: 

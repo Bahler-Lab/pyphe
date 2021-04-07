@@ -65,7 +65,7 @@ def scan_batch(n, plateStart, prefix, postfix, fixture, resolution, geometries, 
         ready = None
         while not ready:
             try:
-                inp = raw_input('If ready, enter y to start scan > ')
+                inp = input('If ready, enter y to start scan > ')
                 if inp == 'y':
                     ready = True
                 else:

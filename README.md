@@ -5,7 +5,9 @@ A python toolbox for phenotype analysis of arrayed microbial colonies written by
 
 For a quick overview, please see our [10 minute video tutorial](https://www.youtube.com/watch?v=lQ3lXIdhA1c&t=5s).
 
-For more information, please see our [_eLife_ paper](https://elifesciences.org/articles/55160).
+For a more detailed protocol, including growth curves and viability assays, please see our [protocol preprint](https://www.researchsquare.com/article/rs-401914/v1).
+
+For more background information, please see our [_eLife_ paper](https://elifesciences.org/articles/55160).
 
 Please cite as:
 > Kamrad, S., Rodríguez-López, M., Cotobal, C., Correia-Melo, C., Ralser M., Bähler J. (2020). Pyphe, a python toolbox for assessing microbial growth and cell viability in high-throughput colony screens. eLife 9:e55160

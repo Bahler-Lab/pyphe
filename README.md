@@ -75,7 +75,7 @@ optional arguments:
                         current date YYYYMMDD.
   --postfix POSTFIX     Name postfix for output files. Defaults to empty
                         string.
-  --fixture {som3_edge,som3,petrie}
+  --fixture {som3_edge,som3,som3-color}
                         ID of the fixture you are using.
   --resolution {150,300,600,900,1200}
                         Resolution for scanning in dpi. Default is 600.
@@ -111,7 +111,7 @@ optional arguments:
                         current date YYYYMMDD.
   --postfix POSTFIX     Name postfix for output files. Defaults to empty
                         string.
-  --fixture {som3_edge,som3,petrie}
+  --fixture {som3_edge,som3,som3-color}
                         ID of the fixture you are using.
   --resolution {150,300,600,900,1200}
                         Resolution for scanning in dpi. Default is 600.
@@ -198,18 +198,23 @@ The --grid parameter is required define the position of colonies on the plate. Y
 
 ```
 usage: pyphe-quantify [-h] --grid GRID [--pattern PATTERN] [--t T] [--d D]
-                      [--s S] [--negate NEGATE] [--reportAll]
-                      [--reportFileNames]
+                      [--s S] [--negate NEGATE] [--localThresh] [--convexhull]
+                      [--reportAll] [--reportFileNames]
                       [--hardImageThreshold HARDIMAGETHRESHOLD]
                       [--hardSizeThreshold HARDSIZETHRESHOLD] [--qc QC]
+                      [--calibrate CALIBRATE] [--timepoints TIMEPOINTS]
                       [--out OUT]
                       {batch,timecourse,redness}
+
+Welcome to pyphe-quantify, part of the pyphe toolbox. Written by
+stephan.kamrad@crick.ac.uk and maintained at https://github.com/Bahler-
+Lab/pyphe
 
 positional arguments:
   {batch,timecourse,redness}
                         Pyphe-quantify can be run in three different modes. In
                         batch mode, it quantifies colony sizes for all images
-                        mathcing the pattern individually. A separate results
+                        matching the pattern individually. A separate results
                         table and qc image is produced for each. Redness mode
                         is similar except that the redness of each colony is
                         quantified. In timecourse mode, all images matching
@@ -224,17 +229,30 @@ optional arguments:
   -h, --help            show this help message and exit
   --grid GRID           This option is required (all others have defaults set)
                         and specifies the grid in which the colonies are
-                        arranged. The argument has to be in the form of 6
-                        integer numbers separated by "-": <number of colony
-                        rows>-<number of colony columns>-<x-position of the
-                        top left colony>-<y-position of the top left
+                        arranged. You can use automatic grid detection using
+                        one of the following parameters: auto_96, auto_384 or
+                        auto_1536. Automatic grid correction will not work if
+                        the colony grid is not aligned with the image borders.
+                        Images should contain only agar and colonies, avaoid
+                        having borders. It might fail or produce unexpected
+                        results if there are whole rows/columns missing. In
+                        those cases, it is easy to define hard-wired grid
+                        positions. If you are using the fixture provided with
+                        pyphe, we have preconfigured these for you. Depending
+                        on the pinning density, use pp3_96, pp3_384 or
+                        pp3_1536. Otherwise, the argument has to be in the
+                        form of 6 integer numbers separated by "-": <number of
+                        colony rows>-<number of colony columns>-<x-position of
+                        the top left colony>-<y-position of the top left
                         colony>-<x-position of the bottom right
                         colony>-<y-position of the bottom right colony>.
                         Positions must be integers and are the distance in
                         number of pixels from the image origin in each
                         dimension (x is width dimension, y is height
                         dimension). The image origin is, in line with scikit-
-                        image, in the top left corner.
+                        image, in the top left corner. Pixel positions are
+                        easily determined using programs such as Microsoft
+                        Paint, by simply hovering the mouse over a position.
   --pattern PATTERN     Pattern describing files to analyse. This follows
                         standard unix convention and can be used to specify
                         subfolders in which to look for images
@@ -263,7 +281,17 @@ optional arguments:
   --negate NEGATE       In images acquired by transmission scanning, the
                         colonies are darker than the background. Before
                         thresholding, the image needs to be inverted/negated.
-                        Ignored in redness mode.
+                        Defaults to True in timecourse and batch mode, ignored
+                        in redness mode.
+  --localThresh         Use local thresholding in batch and timecourse mode.
+                        This can help when image brightness is very uneven.
+                        Ignored in redness mode where local thresholding is
+                        always applied.
+  --convexhull          Apply convex hull transformation to identified
+                        colonies to fill holes. Useful when working with spots
+                        rather than colonies. Ignored in redness mode.
+                        WARNING: Using this options results in much longer
+                        analysis times.
   --reportAll           Sometimes, two putative colonies are identified that
                         are within the distance threshold of a grid position.
                         By default, only the closest colony is reported. This
@@ -275,17 +303,31 @@ optional arguments:
   --reportFileNames     Only for timecourse mode, otherwise ignored. Use
                         filenames as index for output table instead of
                         timepoints. Useful when the ordering of timepoints is
-                        not the same as returned by the pattern.
+                        not the same as returned by the pattern. Setting this
+                        option overrides the --timepoints argument.
   --hardImageThreshold HARDIMAGETHRESHOLD
                         Allows a hard (fixed) intensity threshold in the range
-                        [0,1] to be used instead of Otsu thresholding. But
-                        images intensities are re-scaled to [0,1] before
-                        thresholding.
+                        [0,1] to be used instead of Otsu thresholding. Images
+                        intensities are re-scaled to [0,1] before
+                        thresholding. Ignored in timecourse mode.
   --hardSizeThreshold HARDSIZETHRESHOLD
                         Allows a hard (fixed) size threshold [number of
                         pixels] to be used for filtering small colonies.
   --qc QC               Directory to save qc images in. Defaults to
                         "qc_images".
+  --calibrate CALIBRATE
+                        Transform background subtracted intensity values by
+                        this function. Function needs to be a single term with
+                        x as the variable and that is valid python code. E.g.
+                        use "2*x**2+1" to square each pixels intensity,
+                        multiply by two and add 1. Defaults to "x", i.e. use
+                        of no calibration. Used only in timecourse mode.
+  --timepoints TIMEPOINTS
+                        In timecourse mode only. Path to a file that specifies
+                        the timepoints of all images in the timeseries. This
+                        is usually the timepoints.txt file created by pyphe-
+                        scan-timecourse. It must contain one entry per line
+                        and have the same number of lines as number of images.
   --out OUT             Directory to save output files in. Defaults to
                         "pyphe_quant".
 ```

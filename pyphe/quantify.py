@@ -10,7 +10,7 @@ from scipy.stats import trim_mean
 import math
 
 from skimage.filters import threshold_otsu, gaussian, threshold_local
-from skimage.morphology import remove_small_objects
+from skimage.morphology import remove_small_objects, convex_hull_object
 from skimage.segmentation import clear_border
 from skimage.util import invert
 from skimage.measure import regionprops, label
@@ -120,7 +120,7 @@ def match_to_grid(labels, centroids, grid, griddist, d=3, reportAll=False):
     return dm
 
 
-def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None, local=False):
+def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None, local=False, convexhull=False):
     '''
     Identifies suitable morphological components from image by thresholding.
     '''
@@ -136,6 +136,10 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None, 
             
         mask = image>thresh
     
+    #Fill holes. Warning: takes a long time
+    if convexhull:
+        mask = convex_hull_object(mask)
+        
     #Filter small components. The default threshold is 0.00005 of the image area 
     if hardSizeThreshold:
         size_thresh = hardSizeThreshold
@@ -143,7 +147,6 @@ def make_mask(image, t=1, s=1, hardImageThreshold=None, hardSizeThreshold=None, 
         size_thresh = s * np.prod(image.shape) * 0.00005
     mask = remove_small_objects(mask, min_size=size_thresh)
     
-    #Fill holes?? In future
     
     #Clear border
     mask = clear_border(mask)
@@ -174,7 +177,7 @@ def check_and_negate(orig_image, negate=True):
         
     return image
 
-def quantify_single_image_size(orig_image, grid, auto, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None, localThresh=None):
+def quantify_single_image_size(orig_image, grid, auto, t=1, d=3, s=1, negate=True, reportAll=False, hardImageThreshold=None, hardSizeThreshold=None, localThresh=None, convexhull=False):
     '''
     Process a single image to extract colony sizes.
     '''
@@ -189,7 +192,7 @@ def quantify_single_image_size(orig_image, grid, auto, t=1, d=3, s=1, negate=Tru
         grid, griddist = make_grid(grid)
         
     #Make mask
-    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=localThresh)
+    mask = make_mask(image, t=t, s=s, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, local=localThresh, convexhull=convexhull)
     
     #Measure regionprobs
     data = {r.label : {p : r[p] for p in ['label', 'area', 'centroid', 'mean_intensity', 'perimeter']} for r in regionprops(mask, intensity_image=image)}
@@ -256,7 +259,7 @@ def quantify_single_image_redness(orig_image, grid, auto, t=1, d=3, s=1, negate=
 
     return (data, qc)
     
-def quantify_batch(images, grid, auto, mode, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=None, hardImageThreshold=None, hardSizeThreshold=None, localThresh=None):
+def quantify_batch(images, grid, auto, mode, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=None, hardImageThreshold=None, hardSizeThreshold=None, localThresh=None, convexhull=False):
     '''
     Analyse colony size for batch of plates. Depending on mode, either the quantify_single_image_grey or quantify_single_image_redness function is applied to all images.
     '''
@@ -264,7 +267,7 @@ def quantify_batch(images, grid, auto, mode, qc='qc_images', out='pyphe_quant', 
     for fname, im in zip(images.files, images):
         
         if mode == 'batch':
-            data, qc_image = quantify_single_image_size(np.copy(im), grid, auto, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, localThresh=localThresh)
+            data, qc_image = quantify_single_image_size(np.copy(im), grid, auto, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold, localThresh=localThresh, convexhull=convexhull)
         elif mode == 'redness':
             data, qc_image = quantify_single_image_redness(np.copy(im), grid, auto, t=t, d=d, s=s, negate=negate, reportAll=reportAll, hardImageThreshold=hardImageThreshold, hardSizeThreshold=hardSizeThreshold)
         else:
@@ -321,7 +324,7 @@ def quantify_single_image_fromTimecourse(orig_image, mask, negate=True, calibrat
     return data
 
         
-def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x', timepoints=None, localThresh=None):
+def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t=1, d=3, s=1, negate=True, reportAll=False, reportFileNames=False, hardImageThreshold=None, hardSizeThreshold=None, calibrate='x', timepoints=None, localThresh=None, convexhull=False):
     '''
     Analyse a timeseries of images. Make the mask based on the last image and extract intensity information from all previous images based on that.
     '''
@@ -338,7 +341,7 @@ def quantify_timecourse(images, grid, auto, qc='qc_images', out='pyphe_quant', t
         grid, griddist = make_grid(grid)
     
     #Make mask
-    mask = make_mask(fimage, t=t, s=s, hardSizeThreshold=hardSizeThreshold)
+    mask = make_mask(fimage, t=t, s=s, hardSizeThreshold=hardSizeThreshold, convexhull=convexhull)
     
     #Make table of intensities over time
     data = {fname : quantify_single_image_fromTimecourse(orig_image, mask, negate=negate, calibrate=calibrate) for fname,orig_image in zip(images.files, images)}

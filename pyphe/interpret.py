@@ -2,6 +2,7 @@ import pandas as pd
 from scipy.stats import ttest_ind
 import numpy as np
 from statsmodels.stats.multitest import multipletests as multit
+from warnings import warn
 
 def count_reps(inseries):
     inseries = inseries.tolist()
@@ -46,21 +47,21 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
         print('Circularity filter is set. Checking if Colony_circularity column exists')
         if 'Colony_circularity' not in list(ld):
             raise NameError('Input data has no column named Colony_circularity. Cannot apply circularity filter.')
-            
-            
+
+
     ###Report some simple numbers
     print('Data report loaded successfully')
-    
-    conditions = ld[condition_column].unique()
-    print('Number of unique elements in axis column: %i'%len(conditions))
-    
-    strains = ld[strain_column].unique()
-    print('Number of unique elements in grouping column: %i'%len(strains))
-    
+
+    initial_conditions = ld[condition_column].unique()
+    print('Number of unique elements in axis column: %i'%len(initial_conditions))
+
+    initial_strains = ld[strain_column].unique()
+    print('Number of unique elements in grouping column: %i'%len(initial_strains))
+
     print('Number of plates: %i'%len(ld['Plate'].unique()))
 
     print('Number of non-NA data points: %i'%len(ld.loc[~pd.isnull(ld[values_column])].index))
-    
+
     ###Simple QC filters
     n_datapoints = (~ld[values_column].isnull()).sum()
     if circularity:
@@ -73,18 +74,26 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
         nn_datapoints = (~ld[values_column].isnull()).sum()
         print('Removed %i entries with fitness 0'%(n_datapoints-nn_datapoints))
         n_datapoints = nn_datapoints
-    
+
     ###Group by replicates
     ld_stats = ld.copy()
+    #drop any NA
+    ld_stats = ld_stats.loc[~ld_stats[values_column].isnull()]
+    #Recompute number of axis and grouping elements
+    conditions = ld_stats[condition_column].unique()
+    print('Number of unique elements in axis column after filtering: %i'%len(conditions))
+    strains = ld_stats[strain_column].unique()
+    print('Number of unique elements in grouping column: %i'%len(strains))
+
     ld_stats['condition---strain'] = ld_stats[condition_column] + '---' + ld_stats[strain_column]
     ld_stats['rep'] = count_reps(ld_stats['condition---strain'])
-    
+
     #Pivot this into wide format
     ld_stats_piv = ld_stats.pivot_table(index=strain_column, columns=[condition_column,'rep'], values=values_column)
 
     #assert that there are no duplicates, i.e. that count_reps() worked as expected
     assert (ld_stats.pivot_table(index=strain_column, columns=[condition_column,'rep'], values=values_column, aggfunc=len).unstack().dropna()==1.0).all()
-    
+
     #Save this table:
     ld_stats_piv.to_csv(out_prefix+'_reps.csv')
     ###Compute summary stats
@@ -92,11 +101,11 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     median_fitness = ld_stats_piv.median(axis=1, level=0)
     fitness_stdev = ld_stats_piv.std(axis=1, level=0)
     obs_count = ld_stats_piv.count(axis=1, level=0)
-    
+
     #Compute effect sizes
     median_effect_size = median_fitness.div(median_fitness[control_condition], axis=0)
     mean_effect_size = mean_fitness.div(mean_fitness[control_condition], axis=0)
-   
+
     ###run Welch's t-test
     print('Running t-tests')
     p_Welch = {}
@@ -112,7 +121,10 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     #multiple testing correction by BH
     p_Welch_BH = p_Welch.copy()
     for c in p_Welch_BH:
-        p_Welch_BH.loc[~p_Welch_BH[c].isnull(), c] = multit(p_Welch_BH.loc[~p_Welch_BH[c].isnull(), c], method='fdr_bh')[1]
+        if p_Welch_BH[c].isnull().all():
+            warn('No p-values obtained for %s (probably not enaough replicates)'%c)
+        else:
+            p_Welch_BH.loc[~p_Welch_BH[c].isnull(), c] = multit(p_Welch_BH.loc[~p_Welch_BH[c].isnull(), c], method='fdr_bh')[1]
 
 
     #aggregate data in table and save

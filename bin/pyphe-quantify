@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('--t', type=float, default=1, help='By default the intensity threshold to distinguish colonies from the background is determined by the Otsu method. The determined value will be multiplied by this argument to give the final threshold. Useful for easily fine-tuning colony detection.')
     parser.add_argument('--d', type=float, default=3, help='The distance between two grid positions will be divided by this number to compute the maximum distance a putative colony can be away from its reference grid position. Decreasing this number towards 2 makes colony-to-grid-matching more permissive (might help when some of your plates are at a slight angle or out of position).')
     parser.add_argument('--s', type=float, default=1, help='Detected putative colonies will be filtered by size and small components (usually image noise) will be excluded. The default threshold is the image area*0.00005 and is therefore independent of scanning resolution. This default is then multiplied by this argument to give the final threshold. Useful for when colonies have unusual sizes.')
-    parser.add_argument('--negate', type=bool, default=True, help='In images acquired by transmission scanning, the colonies are darker than the background. Before thresholding, the image needs to be inverted/negated. Defaults to True in timecourse and batch mode, ignored in redness mode. ')
+    parser.add_argument('--no-negate', action='store_false', default=True, help='In images acquired by transmission scanning, the colonies are darker than the background. Before thresholding, the image needs to be inverted/negated. Use this option if you do not want to negate images (e.g. when they were taken with a camera). Ignored in redness mode. ')
     parser.add_argument('--localThresh', default=False, action='store_true', help='Use local thresholding in batch and timecourse mode. This can help when image brightness is very uneven. Ignored in redness mode where local thresholding is always applied.')
     parser.add_argument('--convexhull', default=False, action='store_true', help='Apply convex hull transformation to identified colonies to fill holes. Useful when working with spots rather than colonies. Ignored in redness mode. WARNING: Using this options results in much longer analysis times.')
     parser.add_argument('--reportAll', default=False, action='store_true', help='Sometimes, two putative colonies are identified that are within the distance threshold of a grid position. By default, only the closest colony is reported. This can be changed by setting this option (without parameter). This option allows pyphe quantify to be used even if colonies are not arrayed in a regular grid (you still need to provide a grid parameter though that spans the colonies you are interested i). ')
@@ -67,6 +67,17 @@ if __name__ == '__main__':
         auto = True
         grid = '32-48'
     
+    elif grid.startswith('auto_'):
+        auto = True
+        griddef = grid[5:]
+        try:
+            griddef = griddef.split('-')
+            griddef = map(int, griddef)
+            grid = '-'.join(map(str,griddef))
+        except Exception:
+            raise ValueError('Invalid grid definition. If auto grid fitting with custom numbers of rows/columns is desired, the grid argument must be "auto_r-c", where r and c are the numbers of rows/columns respectively')
+            
+    
     else:
         auto = False
         
@@ -87,12 +98,14 @@ if __name__ == '__main__':
 
     ###Start analysis###
     arg_dict = dict(vars(args))
+    arg_dict['negate'] = arg_dict['no_negate']
+    arg_dict.pop('no_negate')    
     argstr = '\n    '.join(['%s: %s'%(k,str(v)) for k,v in arg_dict.items()])
     print('Starting analysis with the following parameters:\n%s'%argstr)
     arg_dict.pop('grid')
     arg_dict.pop('mode')
     arg_dict.pop('pattern')
-
+    
     if (args.mode == 'batch') or (args.mode == 'redness'):
         arg_dict.pop('calibrate')
         arg_dict.pop('timepoints')

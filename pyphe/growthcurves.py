@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
-def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold, plots, plot_ylim, outdir, in_baseStr):
+def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold, plots, plot_ylim, outdir, in_baseStr, plot_individual_data):
     '''
     Function for analysing a csv containing growthcurves.
     
@@ -24,7 +24,7 @@ def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold,
         x (array-like) -- 1D array-like containing the population/colony sizes
         t (array-like) -- 1D array-like containing the timepoints, must have same dimensions as x
         t0 (float) -- Inoculation biomass
-        method (str) -- method to use to determine lag phase. Currently supported: rel_threshold and abs_threshold. Tobi method waits to be implemented
+        method (str) -- method to use to determine lag phase. Currently supported: rel_threshold and abs_threshold.
         thresh (float) -- The threshold value to use. The lag phase will be determined as the time it takes for the biomass to exceed this value (for abs_threshold) or t0*threshold for rel_threshold.
         Returns:
         lag (float) -- lag time
@@ -76,11 +76,23 @@ def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold,
         slope_result['x-intercept'] = -slope_result['y-intercept']/slope_result['max_slope']
         return slope_result
         
-        
+    #Get max slopes    
     slopes = gdata.apply(find_max_slope)
     
+    
+    #Get area under the curve (AUC)
+    aucs = gdata.sum()
+    aucs.name = 'sum of values (AUC)'
+    aucs = pd.DataFrame(aucs).transpose()
+
+    #Get maximum value
+    maxgrowth = gdata.max()
+    maxgrowth.name = 'maximum'
+    maxgrowth = pd.DataFrame(maxgrowth).transpose()
+
+    
     ###Perform some simple QC
-    #flag cases where min slope is > 7.5% of max slope in entire input data
+    #flag cases where min slope is < - 7.5% of max slope in entire input data
     min_slopes = gdata.apply(find_max_slope, find_min_instead=True)
     min_slopes = min_slopes.loc['max_slope']   
     neg_slope_warning = min_slopes < -(slopes.loc['max_slope'].max() * 0.075)
@@ -117,7 +129,9 @@ def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold,
                 fig, ax = plt.subplots(layout[0], layout[1], figsize=(8.27,11.69))
                 for a in ax.flat:
                     
-                    a.plot(t, gdata[toPlot[0]], **raw_kwargs)
+                    a.plot(t, gdata[toPlot[0]], **raw_kwargs, zorder=1)
+                    if plot_individual_data:
+                        a.scatter(t, gdata[toPlot[0]], color='k', marker='.', s=1, zorder=2)
                     #Get ylim
                     ylim = a.get_ylim()
 
@@ -153,4 +167,4 @@ def analyse_growthcurve(gdata, fitrange, t0_fitrange, lag_method, lag_threshold,
                 plt.close()
                 plt.clf()
 
-    return pd.concat([lags, slopes, neg_slope_warning, r2_warning], axis=0)
+    return pd.concat([lags, slopes, aucs, maxgrowth, neg_slope_warning, r2_warning], axis=0)

@@ -18,7 +18,8 @@ if __name__ == '__main__':
     parser.add_argument('--plots', default=False, action='store_true', help='Set this option (no argument required) to produce a plot of all growthcurves as pdf.')
     parser.add_argument('--plot-ylim', type=float, help='Specify the upper limit of the y-axis of growth curve plots. Useful if you want curves to be directly comparable. If not set, the axis of each curve is scaled to the data.')
     parser.add_argument('--out', type=str, default='.', help='Folder to save result files in. Result files have the same name as the input file with _results.csv appended.')
-    
+    parser.add_argument('--plot-individual-data', default=False, action='store_true', help='Plot individual data points.')
+
     args = parser.parse_args()
     
     if not args.fitrange >1:
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     in_baseStr = '.'.join(path.split(args.input)[1].split('.')[:-1])
     
     check_mkdir(outdir)
-    result = growthcurves.analyse_growthcurve(gdata, args.fitrange, args.t0_fitrange, args.lag_method, args.lag_threshold, args.plots, args.plot_ylim, outdir, in_baseStr)
+    result = growthcurves.analyse_growthcurve(gdata, args.fitrange, args.t0_fitrange, args.lag_method, args.lag_threshold, args.plots, args.plot_ylim, outdir, in_baseStr, args.plot_individual_data)
       
     result.to_csv(outdir + '/' + in_baseStr + '_results.csv')
     

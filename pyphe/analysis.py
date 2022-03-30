@@ -165,7 +165,10 @@ class Plate():
         dat['Row'] = dat.index.map(lambda x: int(x.split('-')[0]))
         dat['Column'] = dat.index.map(lambda x: int(x.split('-')[1]))
 
-        for c in ['initial biomass', 'lag', 'r2', 't_max', 'y-intercept', 'x-intercept', 'max_slope']:
+        resvars = ['initial biomass', 'lag', 'r2', 't_max', 'y-intercept', 'x-intercept', 'max_slope', 'sum of values (AUC)', 'maximum']
+        resvars = [s for s in resvars if s in dat.columns]
+        
+        for c in resvars:
             tf = dat.pivot(index='Row', columns='Column', values=c)
             tf = tf.sort_index().sort_index(axis=1)
             tf.index = tf.index.map(str)
@@ -175,7 +178,7 @@ class Plate():
                 self.pos_data['Colony_size'] = tf.astype(float)
             else:
                 self.pos_data[c] = tf.astype(float)
-
+                
         
     def read_layout_single_plate(self, kwargs={'header':None}):
         '''Read the layout of a single file in wide format. This is essentially a wrapper for pandas' read_csv() function which will store returned DataFrame in the pos_data Series of the plate instance. The path of the layout file needs to be provided in the exp_data file in a column named Layout_path. The layout file should not have any header or index information but this can be overriden by supplying keyword arguments as a dictionary to the kwargs argument. Any keyword arguments provided will be passed to pandas' read_csv() function.'''

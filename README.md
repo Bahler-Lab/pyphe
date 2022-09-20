@@ -29,7 +29,7 @@ Please see our paper for a detailed protocol and explanations of the algorithms.
 
 
 ## Support
-Please check the manuals below carefully, they are also available in the terminal by running the command with the -h option only. If things are still not working, please email me (stephan.kamrad@crick.ac.uk) and I will try and help. If you think you have discovered a bug, or would like to request a new feature, please raise an issue on www.github.com/Bahler-Lab/pyphe.
+Please check the manuals below carefully, they are also available in the terminal by running the command with the -h option only. If things are still not working, please email me (stephan.kamrad@gmail.com) and I will try and help. If you think you have discovered a bug, or would like to request a new feature, please raise an issue on www.github.com/Bahler-Lab/pyphe.
 
 If you get an error like this, make sure you are not using the Anaconda Powershell Prompt:
 ```python: can't open file 'C:\Users\user1\Anaconda3\Scripts"C:\Users\user1\Anaconda3\Scripts\pyphe-quantify.bat  -h ': [Errno 22] Invalid argument```

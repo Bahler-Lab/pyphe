@@ -533,8 +533,10 @@ def pyphe_cmd(wdirectory=None, grid_norm=None, out_ld=None, qcplots=None, check_
         elif (grid_pos == 'Standard 1536 (top left and bottom right)') or (grid_pos == 'standard1536'):
             gridpos_list = [(row, col) for row in range(1, 32, 4) for col in range(1, 48, 4)]
             gridpos_list += [(row, col) for row in range(4, 33, 4) for col in range(4, 49, 4)]
+        elif grid_pos == '1536with384grid':
+            gridpos_list = [(row, col) for row in range(1, 32, 2) for col in range(1, 48, 2)]
         else:
-            raise ValueError('grid_pos must be one of ["Standard 384 (top left)", "standard384", "Standard 1536 (top left and bottom right)", "standard1536"]')
+            raise ValueError('grid_pos must be one of ["Standard 384 (top left)", "standard384", "Standard 1536 (top left and bottom right)", "standard1536", "1536with384grid"]')
 
 
         if extrapolate_corners:

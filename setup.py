@@ -5,13 +5,13 @@ with open("README.md", "r") as fh:
     
     
 setup(name='pyphe',
-      version='0.981',
+      version='0.982',
       description='Python toolbox for phenotype analysis of arrayed microbial colonies',
       long_description=long_description,
       long_description_content_type="text/markdown",
       url='https://github.com/Bahler-Lab/pyphe',
       author='Stephan Kamrad',
-      author_email='stephan.kamrad@crick.ac.uk',
+      author_email='stephan.kamrad@gmail.com',
       license='MIT',
       packages=['pyphe'],
       scripts=['bin/pyphe-scan', 'bin/pyphe-scan-timecourse', 'bin/pyphe-growthcurves', 'bin/pyphe-analyse', 'bin/pyphe-quantify', 'bin/pyphe-interpret',

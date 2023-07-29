@@ -371,13 +371,15 @@ optional arguments:
                         and will overwrite the file if it exists.
   --load_layouts        Set this option (without parameters) to load layouts
                         (requires Layout_path column in the EDT).
-  --gridnorm {standard384,standard1536}
+  --gridnorm {standard384,standard1536,1536with384grid}
                         Perform reference grid normalisation. Standard384
                         refers to plates which are in 384 (16x24) format with
                         the reference grid in 96 format in the top left
                         corner. Standard1536 refers to plates in 1536 format
                         (32x48( with two 96 reference grids in the top left
-                        and bottom right corners.
+                        and bottom right corners. 1536with384grid refers to
+                        plates in 1536 format with a 384 reference grid in
+                        the top left position.
   --extrapolate_corners
                         If working in standard1536 format, set this option to
                         extrapolate the reference grid in the bottom left and

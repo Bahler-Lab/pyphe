@@ -21,6 +21,7 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     Interpret experimental data report produced by pyphe-analyse. 
     '''
     
+    
     ###Check if essential columns exist
     print('Checking input table')
     print('Checking if axis_column exists')
@@ -97,10 +98,10 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     #Save this table:
     ld_stats_piv.to_csv(out_prefix+'_reps.csv')
     ###Compute summary stats
-    mean_fitness = ld_stats_piv.mean(axis=1, level=0)
-    median_fitness = ld_stats_piv.median(axis=1, level=0)
-    fitness_stdev = ld_stats_piv.std(axis=1, level=0)
-    obs_count = ld_stats_piv.count(axis=1, level=0)
+    mean_fitness = ld_stats_piv.stack().groupby('Condition').mean()
+    median_fitness = ld_stats_piv.stack().groupby('Condition').median()
+    fitness_stdev = ld_stats_piv.stack().groupby('Condition').std()
+    obs_count = ld_stats_piv.stack().groupby('Condition').agg(lambda x: (~x.isnull()).sum())
 
     #Compute effect sizes
     median_effect_size = median_fitness.div(median_fitness[control_condition], axis=0)
@@ -115,7 +116,7 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     for co in conditions:
         a = ld_stats_piv.xs(co, axis=1, level=0).values
         a = np.ma.masked_invalid(a)
-        pvals_temp = mstats_basic.ttest_ind(a, b, axis=1, equal_var=False)[1].filled(np.nan)
+        pvals_temp = ttest_ind(a, b, axis=1, equal_var=False, nan_policy='omit')[1]
         p_Welch[co] = pd.Series(pvals_temp, index=ld_stats_piv.index)
     p_Welch = pd.concat(p_Welch, axis=1)
     #multiple testing correction by BH
@@ -130,22 +131,23 @@ def interpret(ld, condition_column, strain_column, values_column, control_condit
     #aggregate data in table and save
     #And join together in one big data frame
     combined_data = pd.concat({'mean_fitness' : mean_fitness,
-                               'mean_fitness_log2' : mean_fitness.applymap(np.log2),
+                               'mean_fitness_log2' : mean_fitness.map(np.log2),
                 'median_fitness' : median_fitness,
-                  'median_fitness_log2' : median_fitness.applymap(np.log2),
+                  'median_fitness_log2' : median_fitness.map(np.log2),
                 'mean_effect_size' : mean_effect_size,
-                'mean_effect_size_log2' : mean_effect_size.applymap(np.log2),
+                'mean_effect_size_log2' : mean_effect_size.map(np.log2),
                 'median_effect_size' : median_effect_size,
-                'median_effect_size_log2' : median_effect_size.applymap(np.log2),
+                'median_effect_size_log2' : median_effect_size.map(np.log2),
                 'observation_count' : obs_count,
                'stdev_fitness' : fitness_stdev,
                'p_Welch' : p_Welch,
                 'p_Welch_BH' : p_Welch_BH,
-                'p_Welch_BH_-log10' : -p_Welch_BH.applymap(np.log10)}, axis=1)
+                'p_Welch_BH_-log10' : -p_Welch_BH.map(np.log10)}, axis=1)
 
 
     combined_data = combined_data.swaplevel(axis=1).sort_index(axis=1)
     combined_data.to_csv(out_prefix+'_summaryStats.csv')
     print('Interpretation completed and results saved.')
+
     return combined_data
         

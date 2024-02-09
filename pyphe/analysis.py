@@ -30,7 +30,7 @@ plates - A pandas Series of Plate objects, the index is identical to exp_data
 
     def update_meta_data(self):
         '''Update plate meta_data when exp_data has been modified. This is not ideal and could pose a risk of information being overwritten if the user manually edits plate meta-data.'''
-        for i,p in self.plates.iteritems():
+        for i,p in self.plates.items():
             p.meta_data = self.exp_data.loc[i]
 
     def generate_long_data(self):
@@ -40,7 +40,7 @@ plates - A pandas Series of Plate objects, the index is identical to exp_data
         '''
 
         longs = []
-        for i,p in self.plates.iteritems():
+        for i,p in self.plates.items():
             p_long = p.make_long_data()
 
             for m in self.exp_data:
@@ -334,7 +334,7 @@ class Plate():
         
         if not toPlot:
             toPlot = []
-            for i, fr in self.pos_data.iteritems():
+            for i, fr in self.pos_data.items():
                 try:
                     fr.astype(float)#Select only DataFrames which can be cast to numeric.
                     toPlot.append(i)
@@ -416,7 +416,7 @@ class Plate():
         long_data (pandas DataFrame)
         '''
         unstacked = []
-        for k, frame in self.pos_data.iteritems():
+        for k, frame in self.pos_data.items():
             if frame.empty:
                 continue
             l_unstacked = frame.copy()
@@ -543,7 +543,7 @@ def pyphe_cmd(wdirectory=None, grid_norm=None, out_ld=None, qcplots=None, check_
             from sklearn.linear_model import LinearRegression
             #Make a table of  features
             vals = pd.DataFrame(columns=['thisCorner', 'horizontalNeighbour', 'verticalNeighbour'])
-            for i,p in exp.plates.iteritems():
+            for i,p in exp.plates.items():
                 vals.loc[i+'_topLeft'] = [p.pos_data['Colony_size'].loc['1','1'], p.pos_data['Colony_size'].loc['1','5'], p.pos_data['Colony_size'].loc['5','1']]
                 vals.loc[i+'_bottomRight'] = [p.pos_data['Colony_size'].loc['32','48'], p.pos_data['Colony_size'].loc['32','44'], p.pos_data['Colony_size'].loc['28','48']]
             mlm = LinearRegression()
